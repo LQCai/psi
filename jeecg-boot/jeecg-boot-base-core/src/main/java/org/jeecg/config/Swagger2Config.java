@@ -79,6 +79,24 @@ public class Swagger2Config implements WebMvcConfigurer {
                 .globalOperationParameters(setHeaderToken());
     }
 
+    @Bean
+    public Docket erpDocket() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .groupName("erp模块")
+                .apiInfo(apiInfo())
+                .select()
+                //此包路径下的类，才生成接口文档
+                .apis(RequestHandlerSelectors.basePackage("io.finer.erp"))
+                //加了ApiOperation注解的类，才生成接口文档
+                .apis(RequestHandlerSelectors.withClassAnnotation(RestController.class))
+                .apis(RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class))
+                .paths(PathSelectors.any())
+                .build()
+                .securitySchemes(Collections.singletonList(securityScheme()))
+                .securityContexts(securityContexts())
+                .globalOperationParameters(setHeaderToken());
+    }
+
     /***
      * oauth2配置
      * 需要增加swagger授权回调地址
