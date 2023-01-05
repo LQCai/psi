@@ -10,21 +10,6 @@
     :visible="visible">
     <a-spin :spinning="confirmLoading">
       <a-form-model ref="form" :model="model" :rules="validatorRules">
-        <a-form-model-item label="父节点" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="pid">
-          <j-tree-select
-            ref="treeSelect"
-            placeholder=""
-            v-model="model.pid"
-            dict="bas_material_category,name,id"
-            pidField="pid"
-            pidValue="0"
-            hasChildField="has_child"
-            disabled>
-          </j-tree-select>
-        </a-form-model-item>
-        <a-form-model-item label="有子节点" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="hasChild">
-          <j-dict-select-tag v-model="model.hasChild"  dictCode="yn" :disabled="true"/>
-        </a-form-model-item>
         <a-form-model-item label="名称" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="name">
           <a-input v-model="model.name" placeholder="请输入"  :disabled="disableSubmit"/>
         </a-form-model-item>

@@ -68,9 +68,9 @@
           <a-dropdown>
             <a class="ant-dropdown-link">更多 <a-icon type="down" /></a>
             <a-menu slot="overlay">
-              <a-menu-item>
-                <a @click="handleAddChild(record)">添加下级</a>
-              </a-menu-item>
+<!--              <a-menu-item>-->
+<!--                <a @click="handleAddChild(record)">添加下级</a>-->
+<!--              </a-menu-item>-->
               <a-menu-item>
                 <a-popconfirm title="确定删除吗?" @confirm="() => handleDeleteNode(record.id)" placement="topLeft">
                   <a>删除</a>
@@ -337,12 +337,12 @@
           }
         }
       },
-      handleAddChild(record){
-        this.loadParent = true
-        let obj = {}
-        obj[this.pidField] = record['id']
-        this.$refs.modalForm.add(obj);
-      },
+      // handleAddChild(record){
+      //   this.loadParent = true
+      //   let obj = {}
+      //   obj[this.pidField] = record['id']
+      //   this.$refs.modalForm.add(obj);
+      // },
       handleDeleteNode(id) {
         if(!this.url.delete){
           this.$message.error("请设置url.delete属性!")
