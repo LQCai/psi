@@ -89,6 +89,9 @@ public class SalInquiry {
 	private java.lang.String approver;
 	/**下单意向*/
 	@Excel(name = "下单意向", width = 15)
+	@Dict(
+			dicCode = "x_buy_intention"
+	)
     @ApiModelProperty(value = "下单意向")
 	private java.lang.String intention;
 	/**核批结果类型*/

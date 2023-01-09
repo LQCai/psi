@@ -1,17 +1,18 @@
 package io.finer.erp.sale.controller;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import cn.hutool.core.util.ObjectUtil;
+import io.finer.erp.base.entity.BasMaterial;
+import io.finer.erp.base.service.IBasMaterialService;
+import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
+import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
+import org.jeecg.common.constant.CommonConstant;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.aspect.annotation.AutoLog;
-import org.jeecg.common.util.oConvertUtils;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.service.ISalShoppingCartService;
 import java.util.Date;
@@ -20,6 +21,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.system.base.controller.JeecgController;
+import org.jeecg.common.system.vo.LoginUser;
+import org.jeecg.common.util.oConvertUtils;
 import org.jeecgframework.poi.excel.ExcelImportUtil;
 import org.jeecgframework.poi.excel.def.NormalExcelConstants;
 import org.jeecgframework.poi.excel.entity.ExportParams;
@@ -48,6 +51,8 @@ import io.swagger.annotations.ApiOperation;
 public class SalShoppingCartController extends JeecgController<SalShoppingCart, ISalShoppingCartService> {
 	@Autowired
 	private ISalShoppingCartService salShoppingCartService;
+	@Autowired
+	private IBasMaterialService basMaterialService;
 	
 	/**
 	 * 分页列表查询
@@ -66,7 +71,12 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 								   @RequestParam(name="pageSize", defaultValue="10") Integer pageSize,
 								   HttpServletRequest req) {
 		QueryWrapper<SalShoppingCart> queryWrapper = QueryGenerator.initQueryWrapper(salShoppingCart, req.getParameterMap());
-		Page<SalShoppingCart> page = new Page<SalShoppingCart>(pageNo, pageSize);
+
+		// 近显示当前用户关联的数据
+		LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+		queryWrapper.lambda().eq(SalShoppingCart::getOperator, sysUser.getUsername());
+
+		Page<SalShoppingCart> page = new Page<>(pageNo, pageSize);
 		IPage<SalShoppingCart> pageList = salShoppingCartService.page(page, queryWrapper);
 		return Result.OK(pageList);
 	}
@@ -81,6 +91,24 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 	@ApiOperation(value="购物车-添加", notes="购物车-添加")
 	@PostMapping(value = "/add")
 	public Result<?> add(@RequestBody SalShoppingCart salShoppingCart) {
+		// 如果业务员为空, 将当前用户作为业务员
+		LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+		if (ObjectUtil.isEmpty(salShoppingCart.getOperator())) {
+			salShoppingCart.setOperator(sysUser.getUsername());
+		}
+
+		salShoppingCart.setStatus(SalShoppingCartStatusEnum.NORMAL.getStatus());
+		// 如果没有输入报价 => 报价填入商品销售价格
+		if (ObjectUtil.isEmpty(salShoppingCart.getQuotedAmt())) {
+			BasMaterial material = basMaterialService.getById(salShoppingCart.getMaterialId());
+			if (ObjectUtil.isEmpty(material)) {
+				Result.error("商品不存在!");
+			}
+			if (ObjectUtil.isEmpty(material.getSalePrice())) {
+				Result.error("商品销售价格未配置!");
+			}
+			salShoppingCart.setQuotedAmt(material.getSalePrice());
+		}
 		salShoppingCartService.save(salShoppingCart);
 		return Result.OK("添加成功！");
 	}
@@ -140,28 +168,5 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 		SalShoppingCart salShoppingCart = salShoppingCartService.getById(id);
 		return Result.OK(salShoppingCart);
 	}
-
-  /**
-   * 导出excel
-   *
-   * @param request
-   * @param salShoppingCart
-   */
-  @RequestMapping(value = "/exportXls")
-  public ModelAndView exportXls(HttpServletRequest request, SalShoppingCart salShoppingCart) {
-      return super.exportXls(request, salShoppingCart, SalShoppingCart.class, "购物车");
-  }
-
-  /**
-   * 通过excel导入数据
-   *
-   * @param request
-   * @param response
-   * @return
-   */
-  @RequestMapping(value = "/importExcel", method = RequestMethod.POST)
-  public Result<?> importExcel(HttpServletRequest request, HttpServletResponse response) {
-      return super.importExcel(request, response, SalShoppingCart.class);
-  }
 
 }

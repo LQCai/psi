@@ -6,6 +6,16 @@
       <a-form layout='inline' @keyup.enter.native='searchQuery'>
         <a-row :gutter='24'>
 
+          <a-col :xl='6' :lg='7' :md='8' :sm='24'>
+            <a-form-item label='业务员'>
+              <j-search-select-tag v-model="queryParam.operator" :async="true" dict="sys_user,realname,username" placeholder="请选择"/>
+            </a-form-item>
+          </a-col>
+          <a-col :xl='6' :lg='7' :md='8' :sm='24'>
+            <a-form-item label='客户'>
+              <j-search-select-tag v-model="queryParam.customerId" :async="true" dict="bas_customer,aux_name,id" placeholder="请选择"/>
+            </a-form-item>
+          </a-col>
           <!--          <a-col :xl="6" :lg="7" :md="8" :sm="24">-->
           <!--            <a-form-item label="单据编号">-->
           <!--              <a-input placeholder="请输入单据编号" v-model="queryParam.billNo"></a-input>-->
@@ -22,16 +32,6 @@
             <!--              <a-input placeholder="请输入subject" v-model="queryParam.subject"></a-input>-->
             <!--            </a-form-item>-->
             <!--          </a-col>-->
-            <a-col :xl='6' :lg='7' :md='8' :sm='24'>
-              <a-form-item label='业务员'>
-                <a-input placeholder='请输入业务员' v-model='queryParam.operator'></a-input>
-              </a-form-item>
-            </a-col>
-            <a-col :xl='6' :lg='7' :md='8' :sm='24'>
-              <a-form-item label='客户'>
-                <a-input placeholder='请输入客户' v-model='queryParam.customerId'></a-input>
-              </a-form-item>
-            </a-col>
           </template>
           <a-col :xl='6' :lg='7' :md='8' :sm='24'>
             <span style='float: left;overflow: hidden;' class='table-page-search-submitButtons'>
@@ -50,11 +50,11 @@
 
     <!-- 操作按钮区域 -->
     <div class='table-operator'>
-      <a-button @click='handleAdd' type='primary' icon='plus'>新增</a-button>
-      <a-button type='primary' icon='download' @click="handleExportXls('询盘')">导出</a-button>
-      <a-upload name='file' :showUploadList='false' :multiple='false' :headers='tokenHeader' :action='importExcelUrl'
-                @change='handleImportExcel'>
-        <a-button type='primary' icon='import'>导入</a-button>
+<!--      <a-button @click='handleAdd' type='primary' icon='plus'>新增</a-button>-->
+<!--      <a-button type='primary' icon='download' @click="handleExportXls('询盘')">导出</a-button>-->
+<!--      <a-upload name='file' :showUploadList='false' :multiple='false' :headers='tokenHeader' :action='importExcelUrl'-->
+<!--                @change='handleImportExcel'>-->
+<!--        <a-button type='primary' icon='import'>导入</a-button>-->
       </a-upload>
       <a-dropdown v-if='selectedRowKeys.length > 0'>
         <a-menu slot='overlay'>
@@ -158,9 +158,10 @@ export default {
         // },
         {
           title: '业务员',
-          align: 'center',
-          width:100,
+          width:160,
+          align:"center",
           dataIndex: 'operator_dictText',
+          sorter: true
         },
         {
           title:'客户',
@@ -222,7 +223,7 @@ export default {
           title: '下单意向',
           align: 'center',
           width:100,
-          dataIndex: 'intention'
+          dataIndex: 'intention_dictText'
         },
         {
           title: '核批结果类型',

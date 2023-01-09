@@ -8,9 +8,18 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import cn.hutool.core.util.ObjectUtil;
+import io.finer.erp.base.entity.BasMaterial;
+import io.finer.erp.sale.entity.SalShoppingCart;
+import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
+import io.finer.erp.sale.service.ISalShoppingCartService;
+import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
+import org.jeecg.common.constant.CommonConstant;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.aspect.annotation.AutoLog;
+import org.jeecg.common.system.vo.LoginUser;
 import org.jeecg.common.util.oConvertUtils;
 import io.finer.erp.sale.entity.SalInquiry;
 import io.finer.erp.sale.service.ISalInquiryService;
@@ -27,6 +36,7 @@ import org.jeecgframework.poi.excel.entity.ImportParams;
 import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
@@ -48,6 +58,8 @@ import io.swagger.annotations.ApiOperation;
 public class SalInquiryController extends JeecgController<SalInquiry, ISalInquiryService> {
 	@Autowired
 	private ISalInquiryService salInquiryService;
+	@Autowired
+	private ISalShoppingCartService salShoppingCartService;
 	
 	/**
 	 * 分页列表查询
@@ -66,6 +78,13 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 								   @RequestParam(name="pageSize", defaultValue="10") Integer pageSize,
 								   HttpServletRequest req) {
 		QueryWrapper<SalInquiry> queryWrapper = QueryGenerator.initQueryWrapper(salInquiry, req.getParameterMap());
+
+		// 如果当前用户只是普通用户, 仅显示属于与他关联的询盘信息
+		LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+		if(oConvertUtils.isNotEmpty(sysUser.getUserIdentity()) && sysUser.getUserIdentity().equals(CommonConstant.USER_IDENTITY_1)) {
+			queryWrapper.lambda().eq(SalInquiry::getOperator, sysUser.getUsername());
+		}
+
 		Page<SalInquiry> page = new Page<SalInquiry>(pageNo, pageSize);
 		IPage<SalInquiry> pageList = salInquiryService.page(page, queryWrapper);
 		return Result.OK(pageList);
@@ -163,5 +182,42 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
   public Result<?> importExcel(HttpServletRequest request, HttpServletResponse response) {
       return super.importExcel(request, response, SalInquiry.class);
   }
+
+	 /**
+	  * 添加至购物车
+	  *
+	  * @param salInquiry
+	  * @return
+	  */
+	 @AutoLog(value = "询盘-添加至购物车")
+	 @ApiOperation(value="询盘-添加至购物车", notes="询盘-添加至购物车")
+	 @PostMapping(value = "/addToShoppingCart")
+	 @Transactional
+	 public Result<?> addToShoppingCart(@RequestBody SalInquiry salInquiry) {
+		 // 如果业务员为空, 将当前用户作为业务员
+		 LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+		 if (ObjectUtil.isEmpty(salInquiry.getOperator())) {
+			 salInquiry.setOperator(sysUser.getUsername());
+		 }
+
+		 // 如果没有输入报价 => 报价填入商品金额
+		 if (ObjectUtil.isEmpty(salInquiry.getQuotedAmt())) {
+			 salInquiry.setQuotedAmt(salInquiry.getMaterialAmt());
+		 }
+
+		 salInquiryService.save(salInquiry);
+		 SalShoppingCart salShoppingCart = new SalShoppingCart() {{
+			 setCustomerId(salInquiry.getCustomerId());
+			 setMaterialId(salInquiry.getMaterialId());
+			 setMaterialCount(salInquiry.getMaterialCount());
+			 setOperator(salInquiry.getOperator());
+			 setQuotedAmt(salInquiry.getQuotedAmt());
+			 setMaterialAmt(salInquiry.getMaterialAmt());
+			 setInquiryId(salInquiry.getId());
+			 setStatus(SalShoppingCartStatusEnum.NORMAL.getStatus());
+		 }};
+		 salShoppingCartService.save(salShoppingCart);
+		 return Result.OK("添加成功！");
+	 }
 
 }

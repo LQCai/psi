@@ -19,7 +19,7 @@
 <!--        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="subject" label="subject">-->
 <!--          <a-input placeholder="请输入subject" v-model="model.subject" />-->
 <!--        </a-form-model-item>-->
-        <a-form-model-item label="业务员" :labelCol="labelCol3" :wrapperCol="wrapperCol3" prop="operator" ref="operatorFmi">
+        <a-form-model-item label="业务员" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="operator" ref="operatorFmi">
           <a-tooltip placement="bottom">
             <j-select-user-by-dep v-model="model.operator" :multi="false"
                                   @change="val =>{this.resetSrc(); this.onOperatorChange(val); }"/>
@@ -47,23 +47,37 @@
           <a-input placeholder="请输入备注" v-model="model.remark" />
         </a-form-model-item>
         <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="billStage" label="单据阶段">
-          <a-input placeholder="请输入单据阶段" v-model="model.billStage" />
+          <a-input placeholder="请输入单据阶段" :disabled="true" v-model="model.billStage" />
         </a-form-model-item>
-        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="approver" label="审核人">
-          <a-input placeholder="请输入审核人" v-model="model.approver" />
-        </a-form-model-item>
+<!--        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="approver" label="审核人">-->
+<!--          <a-input placeholder="请输入审核人" v-model="model.approver" />-->
+<!--        </a-form-model-item>-->
         <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="intention" label="下单意向">
-          <a-input placeholder="请输入下单意向" v-model="model.intention" />
+          <j-dict-select-tag v-model="model.intention" :async="true" dictCode="x_buy_intention" placeholder="请选择"/>
         </a-form-model-item>
-        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="approvalResultType" label="核批结果类型">
-          <a-input placeholder="请输入核批结果类型" v-model="model.approvalResultType" />
-        </a-form-model-item>
-        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="approvalRemark" label="核批意见">
-          <a-input placeholder="请输入核批意见" v-model="model.approvalRemark" />
-        </a-form-model-item>
-        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="sysOrgCode" label="创建部门">
-          <a-input placeholder="请输入创建部门" v-model="model.sysOrgCode" />
-        </a-form-model-item>
+<!--        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="approvalResultType" label="核批结果类型">-->
+<!--          <a-input placeholder="请输入核批结果类型" v-model="model.approvalResultType" />-->
+<!--        </a-form-model-item>-->
+<!--        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="approvalRemark" label="核批意见">-->
+<!--          <a-input placeholder="请输入核批意见" v-model="model.approvalRemark" />-->
+<!--        </a-form-model-item>-->
+
+        <a-collapse v-model:activeKey="collapseActiveKey" :bordered="false">
+          <a-collapse-panel key="0" header="操作信息" :style="collapseStyle">
+            <a-form-model-item label="创建时间" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="createTime">
+              <j-date v-model="model.createTime" :showTime="true" dateFormat="YYYY-MM-DD HH:mm:ss" :disabled="true" style="width: 100%"/>
+            </a-form-model-item>
+            <a-form-model-item label="创建人" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="createBy">
+              <j-dict-select-tag v-model="model.createBy" dictCode="sys_user,realname,username" :disabled="true"/>
+            </a-form-model-item>
+            <a-form-model-item label="修改时间" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="updateTime">
+              <j-date v-model="model.updateTime" :showTime="true" dateFormat="YYYY-MM-DD HH:mm:ss" :disabled="true" style="width: 100%"/>
+            </a-form-model-item>
+            <a-form-model-item label="修改人" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="updateBy">
+              <j-dict-select-tag v-model="model.updateBy" dictCode="sys_user,realname,username" :disabled="true"/>
+            </a-form-model-item>
+          </a-collapse-panel>
+        </a-collapse>
 
       </a-form-model>
     </a-spin>
@@ -86,6 +100,8 @@ export default {
       title:"操作",
       visible: false,
       model: {},
+      collapseActiveKey: '',
+      collapseStyle: 'background: #ffffff; border-radius: 4px; margin-bottom: 24px; border: 0; overflow: hidden',
       labelCol: {
         xs: { span: 24 },
         sm: { span: 5 },
@@ -94,8 +110,6 @@ export default {
         xs: { span: 24 },
         sm: { span: 16 },
       },
-      labelCol3: {span: 6},
-      wrapperCol3: {span: 18},
 
       confirmLoading: false,
       validatorRules:{

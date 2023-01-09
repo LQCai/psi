@@ -38,16 +38,16 @@ public class SalShoppingCart {
 	private java.lang.String operator;
 	/**客户*/
 	@Excel(name = "客户", width = 15)
-    @ApiModelProperty(value = "客户")
+	@ApiModelProperty(value = "客户")
 	private java.lang.String customerId;
+	/**询盘id*/
+	@Excel(name = "询盘id", width = 15)
+    @ApiModelProperty(value = "询盘id")
+	private java.lang.String inquiryId;
 	/**商品id*/
 	@Excel(name = "商品id", width = 15)
     @ApiModelProperty(value = "商品id")
 	private java.lang.String materialId;
-	/**发票类型*/
-	@Excel(name = "发票类型", width = 15)
-    @ApiModelProperty(value = "发票类型")
-	private java.lang.String invoiceType;
 	/**报价金额*/
 	@Excel(name = "报价金额", width = 15)
     @ApiModelProperty(value = "报价金额")
