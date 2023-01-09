@@ -113,7 +113,7 @@
     </div>
 
     <bas-customer-modal ref="modalForm" @ok="modalFormOk"></bas-customer-modal>
-    <bas-customer-distribute-modal ref="distributeModalForm" :customer-id-list='selectedRowKeys'></bas-customer-distribute-modal>
+    <bas-customer-distribute-modal @close="modalFormOk" ref="distributeModalForm" :customer-id-list='selectedRowKeys'></bas-customer-distribute-modal>
   </a-card>
 </template>
 
