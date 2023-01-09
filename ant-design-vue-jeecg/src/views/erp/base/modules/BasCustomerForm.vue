@@ -169,6 +169,14 @@
           <a-collapse-panel key="9" header="其他信息" :style="collapseStyle">
             <a-row>
               <a-col :span="24">
+                <a-form-model-item label="所属业务员" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="shortName">
+                  <a-tooltip placement="bottom">
+                    <j-select-user-by-dep v-model="model.operator" :multi="false"
+                                          @change="val =>{this.resetSrc(); this.onOperatorChange(val); }"/>
+                  </a-tooltip>
+                </a-form-model-item>
+              </a-col>
+              <a-col :span="24">
                 <a-form-model-item label="简称" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="shortName">
                   <a-input v-model="model.shortName" placeholder="请输入" :disabled="disabled"/>
                 </a-form-model-item>

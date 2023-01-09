@@ -185,6 +185,11 @@ public class BasCustomer implements Serializable {
 	@Excel(name = "备注", width = 15)
     @ApiModelProperty(value = "备注")
     private java.lang.String remark;
+    /**业务员*/
+    @Excel(name = "业务员", width = 15, dictTable = "sys_user", dicText = "realname", dicCode = "username")
+    @ApiModelProperty(value = "业务员")
+    @Dict(dictTable = "sys_user", dicText = "realname", dicCode = "username")
+    private java.lang.String operator;
     /**创建人*/
     @Dict(dictTable = "sys_user", dicText = "realname", dicCode = "username")
     @ApiModelProperty(value = "创建人")

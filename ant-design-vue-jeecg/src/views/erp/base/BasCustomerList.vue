@@ -65,6 +65,7 @@
       <a-upload name="file" :showUploadList="false" :multiple="false" :headers="tokenHeader" :action="importExcelUrl" @change="handleImportExcel">
         <a-button type="link" icon="import">导入</a-button>
       </a-upload>
+      <a-button type="link" @click="handleDistribute" icon="link">分配业务员</a-button>
 
       <i class="anticon anticon-info-circle ant-alert-icon"></i> 已选择 <a style="font-weight: 600">{{ selectedRowKeys.length }}</a>项
       <a v-if="selectedRowKeys.length > 0" style="margin-left: 12px" @click="onClearSelected">清空</a>
@@ -112,6 +113,7 @@
     </div>
 
     <bas-customer-modal ref="modalForm" @ok="modalFormOk"></bas-customer-modal>
+    <bas-customer-distribute-modal ref="distributeModalForm" :customer-id-list='selectedRowKeys'></bas-customer-distribute-modal>
   </a-card>
 </template>
 
@@ -120,6 +122,7 @@
   import { JeecgListMixin } from '@/mixins/JeecgListMixin'
   import { ListMixin } from '../common/mixins/ListMixin'
   import BasCustomerModal from './modules/BasCustomerModal'
+  import BasCustomerDistributeModal from './modules/BasCustomerDistributeModal'
   import TableColumnsSetter from "../common/components/TableColumnsSetter";
   import Area from '@/components/_util/Area'
   import XEUtils from "xe-utils";
@@ -127,7 +130,7 @@
   export default {
     name: 'BasCustomerList',
     mixins:[JeecgListMixin, ListMixin],
-    components: {TableColumnsSetter, BasCustomerModal},
+    components: {TableColumnsSetter, BasCustomerModal, BasCustomerDistributeModal},
 
     data () {
       return {
@@ -217,6 +220,13 @@
             dataIndex: 'website'
           },
           {
+            title: '所属业务员',
+            width:160,
+            align:"center",
+            dataIndex: 'operator_dictText',
+            sorter: true
+          },
+          {
             title:'启用',
             width:75,
             align:"center",
@@ -225,7 +235,6 @@
           {
             title:'备注',
             align:"left",
-            ellipsis: true,
             ellipsis: true,
             dataIndex: 'remark'
           },
@@ -320,6 +329,9 @@
         fieldList.push({type:'int',value:'isEnabled',text:'启用',dictCode:'yn'})
         fieldList.push({type:'string',value:'remark',text:'备注',dictCode:''})
         this.superFieldList = fieldList
+      },
+      handleDistribute() {
+        this.$refs.distributeModalForm.show();
       }
     }
   }
