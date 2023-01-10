@@ -85,6 +85,11 @@ public class SalInquiry {
 	private java.lang.String billStage;
 	/**审核人*/
 	@Excel(name = "审核人", width = 15)
+	@Dict(
+			dictTable = "sys_user",
+			dicText = "realname",
+			dicCode = "username"
+	)
     @ApiModelProperty(value = "审核人")
 	private java.lang.String approver;
 	/**下单意向*/

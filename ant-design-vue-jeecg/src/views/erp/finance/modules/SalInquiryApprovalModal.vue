@@ -110,7 +110,9 @@ export default {
       })
     },
     loadData() {
-      this.idList = this.ids
+      if (this.idList.length === 0) {
+        this.idList = this.ids
+      }
     }
   },
   watch: {

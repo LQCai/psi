@@ -229,6 +229,8 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 	 public Result<?> check(@RequestParam(name="ids") String ids,
 							@RequestParam(name="approvalResultType") String approvalResultType,
 							@RequestParam(name="approvalRemark") String approvalRemark) {
+		 LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+
 		 List<SalInquiry> salInquiryList = salInquiryService.list(Wrappers.<SalInquiry>lambdaQuery()
 				 .in(SalInquiry::getId, Arrays.asList(ids.split(",")))
 		 );
@@ -238,6 +240,7 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 			 }
 			 salInquiry.setApprovalResultType(approvalResultType);
 			 salInquiry.setApprovalRemark(approvalRemark);
+			 salInquiry.setApprover(sysUser.getUsername());
 		 }
 		 salInquiryService.saveOrUpdateBatch(salInquiryList);
 		 return Result.ok("审核提交成功!");

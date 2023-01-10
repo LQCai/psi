@@ -50,7 +50,7 @@
 
     <!-- 操作按钮区域 -->
     <div class='table-operator'>
-      <a-button @click='handleApprovalBatch(selectedRowKeys)' v-has="'SalInquiry:check'" type='primary'>审核</a-button>
+      <a-button @click='handleApprovalBatch(selectedRowKeys)' v-has="'SalInquiry:check'" type='primary'>批量审核</a-button>
 <!--      <a-button @click='handleAdd' type='primary' icon='plus'>新增</a-button>-->
 <!--      <a-button type='primary' icon='download' @click="handleExportXls('询盘')">导出</a-button>-->
 <!--      <a-upload name='file' :showUploadList='false' :multiple='false' :headers='tokenHeader' :action='importExcelUrl'-->
@@ -157,15 +157,15 @@ export default {
         // },
         {
           title: '业务员',
-          width:160,
+          width:140,
           align:"center",
           dataIndex: 'operator_dictText',
           sorter: true
         },
         {
           title:'客户',
-          align:"left",
-          width:100,
+          align:"center",
+          width:160,
           dataIndex: 'customerId_dictText',
           ellipsis: true,
           sorter: true
@@ -216,7 +216,7 @@ export default {
           title: '审核人',
           align: 'center',
           width:100,
-          dataIndex: 'approver'
+          dataIndex: 'approver_dictText'
         },
         {
           title: '下单意向',
@@ -239,10 +239,9 @@ export default {
         },
         {
           title:'创建时间',
-          width:100,
+          width:160,
           align:"center",
           dataIndex: 'createTime',
-          customRender: t => !t ? "" : (t.length > 10 ? t.substr(0, 10) : t)
         },
         {
           title:'创建人',
@@ -252,10 +251,9 @@ export default {
         },
         {
           title:'修改时间',
-          width:100,
+          width:160,
           align:"center",
           dataIndex: 'updateTime',
-          customRender: t => !t ? "" : (t.length > 10 ? t.substr(0, 10) : t)
         },
         {
           title:'修改人',
@@ -292,8 +290,9 @@ export default {
     handleApprovalBatch(ids) {
       if (ids.length === 0) {
         this.$message.warn("请勾选至少一条记录！");
+      } else {
+        this.$refs.approvalModalForm.show(ids);
       }
-      this.$refs.approvalModalForm.show(ids);
     }
   }
 }
