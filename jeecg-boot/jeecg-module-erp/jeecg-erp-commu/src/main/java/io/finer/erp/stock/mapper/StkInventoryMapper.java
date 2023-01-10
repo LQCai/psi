@@ -15,4 +15,6 @@ import java.util.Map;
 public interface StkInventoryMapper extends BaseMapper<StkInventory> {
 
     List<Map<String, Object>> summaryList();
+
+    List<Map<String, Object>> summaryListInMaterialIds(List<String> materialIds);
 }

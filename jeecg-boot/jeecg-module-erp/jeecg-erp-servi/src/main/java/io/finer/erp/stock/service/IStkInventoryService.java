@@ -22,4 +22,6 @@ public interface IStkInventoryService extends IService<StkInventory> {
     void updateInventory(StkIo stkIo, List<StkIoEntry> stkIoEntryList, boolean reverse);
 
     List<Map<String, Object>> summaryList();
+
+    List<Map<String, Object>> summaryListInMaterialIds(List<String> materialIds);
 }

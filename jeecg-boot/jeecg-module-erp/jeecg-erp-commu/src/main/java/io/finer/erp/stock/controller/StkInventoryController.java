@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @Description: 库存
@@ -193,6 +194,40 @@ public class StkInventoryController extends JeecgController<StkInventory, IStkIn
 			dataList.add(basMaterialCategoryVo);
 		}
 		return Result.OK(dataList);
+	}
+
+	@ApiOperation(value = "库存 - 物料分页列表", notes = "库存 - 物料分页列表")
+	@GetMapping(value = "/materialPage")
+	public Result<?> queryPageList(BasMaterial basMaterial,
+								   @RequestParam(name = "pageNo", defaultValue = "1") Integer pageNo,
+								   @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
+								   HttpServletRequest req) {
+		QueryWrapper<BasMaterial> queryWrapper = QueryGenerator.initQueryWrapper(basMaterial, req.getParameterMap());
+		Page<BasMaterial> page = new Page<>(pageNo, pageSize);
+		IPage<BasMaterial> pageList = basMaterialService.page(page, queryWrapper);
+
+		IPage<BasMaterialVo> newPageList = new Page(pageList.getCurrent(), pageList.getSize(), pageList.getTotal());
+		List<BasMaterialVo> dataList = pageList.getRecords().stream().map(item -> BeanUtil.copyProperties(item, BasMaterialVo.class))
+				.collect(Collectors.toList());
+
+		// 数据为空直接返回
+		List<String> materialIds = dataList.stream().map(BasMaterial::getId).collect(Collectors.toList());
+		if (materialIds.size() == 0) {
+			newPageList.setRecords(dataList);
+			return Result.ok(newPageList);
+		}
+
+		List<Map<String, Object>> stkInventoryList = stkInventoryService.summaryListInMaterialIds(materialIds);
+		dataList.forEach(item -> {
+			for (Map<String, Object> stkInventory: stkInventoryList) {
+				if (item.getId().equals(stkInventory.get("material_id"))) {
+					item.setStkInventory(stkInventory);
+					break;
+				}
+			}
+		});
+		newPageList.setRecords(dataList);
+		return Result.ok(newPageList);
 	}
 
 }

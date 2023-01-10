@@ -82,6 +82,11 @@ public class StkInventoryServiceImpl
         return this.baseMapper.summaryList();
     }
 
+    @Override
+    public List<Map<String, Object>> summaryListInMaterialIds(List<String> materialIds) {
+        return this.baseMapper.summaryListInMaterialIds(materialIds);
+    }
+
     private void increase(StkIoEntry stkIoEntry) {
         StkInventory inv_new = new StkInventory();
         inv_new.setWarehouseId(stkIoEntry.getWarehouseId());
