@@ -4,10 +4,15 @@ import java.util.Arrays;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.finer.erp.base.entity.BasMaterial;
 import io.finer.erp.base.service.IBasMaterialService;
+import io.finer.erp.sale.entity.SalInquiry;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
+import io.finer.erp.sale.service.ISalInquiryService;
+import io.finer.erp.sale.vo.SalShoppingCartVo;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.constant.CommonConstant;
@@ -16,6 +21,9 @@ import org.jeecg.common.aspect.annotation.AutoLog;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.service.ISalShoppingCartService;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -53,6 +61,8 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 	private ISalShoppingCartService salShoppingCartService;
 	@Autowired
 	private IBasMaterialService basMaterialService;
+	@Autowired
+	private ISalInquiryService salInquiryService;
 	
 	/**
 	 * 分页列表查询
@@ -78,7 +88,24 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 
 		Page<SalShoppingCart> page = new Page<>(pageNo, pageSize);
 		IPage<SalShoppingCart> pageList = salShoppingCartService.page(page, queryWrapper);
-		return Result.OK(pageList);
+
+		List<SalShoppingCart> salShoppingCartList = pageList.getRecords();
+		List<SalShoppingCartVo> salShoppingCartVoList = salShoppingCartList.stream().map(item -> BeanUtil.copyProperties(item, SalShoppingCartVo.class)).collect(Collectors.toList());
+		List<String> inquiryIdList = salShoppingCartList.stream().map(SalShoppingCart::getInquiryId).distinct().collect(Collectors.toList());
+		if (inquiryIdList.size() != 0) {
+			List<SalInquiry> salInquiryList = salInquiryService.list(Wrappers.<SalInquiry>lambdaQuery()
+					.in(SalInquiry::getId, inquiryIdList)
+			);
+			salShoppingCartVoList.forEach(item -> salInquiryList.forEach(salInquiry -> {
+				if (ObjectUtil.isNotEmpty(item.getInquiryId()) && item.getInquiryId().equals(salInquiry.getId())) {
+					item.setInquiryApprovalResultType(salInquiry.getApprovalResultType());
+				}
+			}));
+		}
+		IPage<SalShoppingCartVo> list = new Page(pageList.getCurrent(), pageList.getSize(), pageList.getTotal());
+		list.setRecords(salShoppingCartVoList);
+
+		return Result.OK(list);
 	}
 	
 	/**

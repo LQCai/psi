@@ -10,6 +10,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.finer.erp.base.entity.BasMaterial;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
@@ -218,6 +220,27 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 		 }};
 		 salShoppingCartService.save(salShoppingCart);
 		 return Result.OK("添加成功！");
+	 }
+
+	 @AutoLog(value = "询盘-审核")
+	 @ApiOperation(value="询盘-审核", notes="询盘-审核")
+	 @PostMapping(value = "/check")
+	 @Transactional
+	 public Result<?> check(@RequestParam(name="ids") String ids,
+							@RequestParam(name="approvalResultType") String approvalResultType,
+							@RequestParam(name="approvalRemark") String approvalRemark) {
+		 List<SalInquiry> salInquiryList = salInquiryService.list(Wrappers.<SalInquiry>lambdaQuery()
+				 .in(SalInquiry::getId, Arrays.asList(ids.split(",")))
+		 );
+		 for (SalInquiry salInquiry: salInquiryList) {
+			 if (ObjectUtil.isNotEmpty(salInquiry.getApprovalResultType())) {
+				 return Result.error("存在已审核的数据, 请检查勾选数据!");
+			 }
+			 salInquiry.setApprovalResultType(approvalResultType);
+			 salInquiry.setApprovalRemark(approvalRemark);
+		 }
+		 salInquiryService.saveOrUpdateBatch(salInquiryList);
+		 return Result.ok("审核提交成功!");
 	 }
 
 }

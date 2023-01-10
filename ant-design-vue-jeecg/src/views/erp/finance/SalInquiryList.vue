@@ -50,13 +50,14 @@
 
     <!-- 操作按钮区域 -->
     <div class='table-operator'>
+      <a-button @click='handleApprovalBatch(selectedRowKeys)' v-has="'SalInquiry:check'" type='primary'>审核</a-button>
 <!--      <a-button @click='handleAdd' type='primary' icon='plus'>新增</a-button>-->
 <!--      <a-button type='primary' icon='download' @click="handleExportXls('询盘')">导出</a-button>-->
 <!--      <a-upload name='file' :showUploadList='false' :multiple='false' :headers='tokenHeader' :action='importExcelUrl'-->
 <!--                @change='handleImportExcel'>-->
 <!--        <a-button type='primary' icon='import'>导入</a-button>-->
-      </a-upload>
-      <a-dropdown v-if='selectedRowKeys.length > 0'>
+<!--      </a-upload>-->
+      <a-dropdown v-if='selectedRowKeys.length > 0' v-has="'SalInquiry:delete'">
         <a-menu slot='overlay'>
           <a-menu-item key='1' @click='batchDel'>
             <a-icon type='delete' />
@@ -91,19 +92,14 @@
         @change='handleTableChange'>
 
         <span slot='action' slot-scope='text, record'>
-          <a @click='handleEdit(record)'>编辑</a>
-
+<!--          <a @click='handleEdit(record)'>编辑</a>-->
+          <a v-has="'SalInquiry:check'" @click='handleApproval(record)'>审核</a>
           <a-divider type='vertical' />
-          <a-dropdown>
-            <a class='ant-dropdown-link'>更多 <a-icon type='down' /></a>
-            <a-menu slot='overlay'>
-              <a-menu-item>
-                <a-popconfirm title='确定删除吗?' @confirm='() => handleDelete(record.id)'>
-                  <a>删除</a>
-                </a-popconfirm>
-              </a-menu-item>
-            </a-menu>
-          </a-dropdown>
+          <a v-has="'SalInquiry:delete'">
+            <a-popconfirm title='确定删除吗?' @confirm='() => handleDelete(record.id)'>
+              <a>删除</a>
+            </a-popconfirm>
+          </a>
         </span>
 
       </a-table>
@@ -112,19 +108,22 @@
 
     <!-- 表单区域 -->
     <salInquiry-modal ref='modalForm' @ok='modalFormOk'></salInquiry-modal>
+    <sal-inquiry-approval-modal :ids='selectedRowKeys' ref='approvalModalForm' @close='modalFormOk'></sal-inquiry-approval-modal>
   </a-card>
 </template>
 
 <script>
 import '@/assets/less/TableExpand.less'
 import SalInquiryModal from './modules/SalInquiryModal'
+import SalInquiryApprovalModal from './modules/SalInquiryApprovalModal'
 import { JeecgListMixin } from '@/mixins/JeecgListMixin'
 
 export default {
   name: 'SalInquiryList',
   mixins: [JeecgListMixin],
   components: {
-    SalInquiryModal
+    SalInquiryModal,
+    SalInquiryApprovalModal
   },
   data() {
     return {
@@ -207,12 +206,12 @@ export default {
           width:100,
           dataIndex: 'remark'
         },
-        {
-          title: '单据阶段',
-          align: 'center',
-          width:100,
-          dataIndex: 'billStage'
-        },
+        // {
+        //   title: '单据阶段',
+        //   align: 'center',
+        //   width:100,
+        //   dataIndex: 'billStage'
+        // },
         {
           title: '审核人',
           align: 'center',
@@ -226,15 +225,16 @@ export default {
           dataIndex: 'intention_dictText'
         },
         {
-          title: '核批结果类型',
+          title: '核批结果',
           align: 'center',
           width:100,
-          dataIndex: 'approvalResultType'
+          dataIndex: 'approvalResultType_dictText'
         },
         {
           title: '核批意见',
           align: 'center',
-          width:100,
+          width:160,
+          ellipsis: true,
           dataIndex: 'approvalRemark'
         },
         {
@@ -285,7 +285,17 @@ export default {
       return `${window._CONFIG['domianURL']}/${this.url.importExcelUrl}`
     }
   },
-  methods: {}
+  methods: {
+    handleApproval(record) {
+      this.$refs.approvalModalForm.show([record.id]);
+    },
+    handleApprovalBatch(ids) {
+      if (ids.length === 0) {
+        this.$message.warn("请勾选至少一条记录！");
+      }
+      this.$refs.approvalModalForm.show(ids);
+    }
+  }
 }
 </script>
 <style scoped>

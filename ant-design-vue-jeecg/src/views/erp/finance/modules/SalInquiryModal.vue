@@ -46,9 +46,9 @@
         <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="remark" label="备注">
           <a-input placeholder="请输入备注" v-model="model.remark" />
         </a-form-model-item>
-        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="billStage" label="单据阶段">
-          <a-input placeholder="请输入单据阶段" :disabled="true" v-model="model.billStage" />
-        </a-form-model-item>
+<!--        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="billStage" label="单据阶段">-->
+<!--          <a-input placeholder="请输入单据阶段" :disabled="true" v-model="model.billStage" />-->
+<!--        </a-form-model-item>-->
 <!--        <a-form-model-item :labelCol="labelCol" :wrapperCol="wrapperCol" prop="approver" label="审核人">-->
 <!--          <a-input placeholder="请输入审核人" v-model="model.approver" />-->
 <!--        </a-form-model-item>-->
