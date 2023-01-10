@@ -3,6 +3,9 @@ package io.finer.erp.stock.mapper;
 import io.finer.erp.stock.entity.StkInventory;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @Description: 库存
  * @Author: jeecg-boot
@@ -11,4 +14,5 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface StkInventoryMapper extends BaseMapper<StkInventory> {
 
+    List<Map<String, Object>> summaryList();
 }

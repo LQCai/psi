@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Description: 库存
@@ -74,6 +75,11 @@ public class StkInventoryServiceImpl
                 entry.setCost(entry.getCost().negate());
             }
         }
+    }
+
+    @Override
+    public List<Map<String, Object>> summaryList() {
+        return this.baseMapper.summaryList();
     }
 
     private void increase(StkIoEntry stkIoEntry) {

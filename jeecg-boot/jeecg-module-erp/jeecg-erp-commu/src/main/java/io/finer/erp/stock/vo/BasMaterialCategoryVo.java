@@ -1,6 +1,5 @@
-package io.finer.erp.base.vo;
+package io.finer.erp.stock.vo;
 
-import io.finer.erp.base.entity.BasMaterial;
 import io.finer.erp.base.entity.BasMaterialCategory;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -17,9 +16,9 @@ import java.util.List;
  */
 @Data
 @ApiModel(value="bas_material_categoryPage对象", description="物料分类")
-public class BasMaterialCategoryWithMaterial extends BasMaterialCategory {
+public class BasMaterialCategoryVo extends BasMaterialCategory {
 	@ExcelCollection(name="物料")
 	@ApiModelProperty(value = "物料")
-	private List<BasMaterial> basMaterialList;
+	private List<BasMaterialVo> basMaterialList;
 
 }

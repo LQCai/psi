@@ -1,10 +1,18 @@
 package io.finer.erp.stock.controller;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.finer.erp.base.entity.BasMaterial;
+import io.finer.erp.base.entity.BasMaterialCategory;
+import io.finer.erp.base.service.IBasMaterialCategoryService;
+import io.finer.erp.base.service.IBasMaterialService;
 import io.finer.erp.stock.entity.StkInventory;
 import io.finer.erp.stock.service.IStkInventoryService;
+import io.finer.erp.stock.vo.BasMaterialCategoryVo;
+import io.finer.erp.stock.vo.BasMaterialVo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +26,12 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
- /**
+/**
  * @Description: 库存
  * @Author:
  * @Date:
@@ -34,6 +45,10 @@ public class StkInventoryController extends JeecgController<StkInventory, IStkIn
 
 	@Autowired
 	private IStkInventoryService stkInventoryService;
+	@Autowired
+	private IBasMaterialService basMaterialService;
+	@Autowired
+	private IBasMaterialCategoryService basMaterialCategoryService;
 
 	/**
 	 * 分页列表查询
@@ -141,5 +156,43 @@ public class StkInventoryController extends JeecgController<StkInventory, IStkIn
     public Result<?> importExcel(HttpServletRequest request, HttpServletResponse response) {
         return super.importExcel(request, response, StkInventory.class);
     }
+
+	@ApiOperation(value = "库存 - 物料分组列表", notes = "库存 - 物料分组列表")
+	@GetMapping(value = "/materialList")
+	public Result<?> materialList() {
+		List<BasMaterialCategory> basMaterialCategorieList = basMaterialCategoryService.list(Wrappers.<BasMaterialCategory>lambdaQuery()
+				.eq(BasMaterialCategory::getIsEnabled, 1)
+		);
+		List<BasMaterial> list = basMaterialService.list(Wrappers.<BasMaterial>lambdaQuery()
+				.eq(BasMaterial::getIsEnabled, 1)
+		);
+		List<Map<String, Object>> stkInventoryList = stkInventoryService.summaryList();
+
+		List<BasMaterialVo> basMaterialVoList = new ArrayList<>();
+		list.forEach(item -> {
+			BasMaterialVo basMaterialVo = BeanUtil.copyProperties(item, BasMaterialVo.class);
+			for (Map<String, Object> stkInventory: stkInventoryList) {
+				if (basMaterialVo.getId().equals(stkInventory.get("material_id"))) {
+					basMaterialVo.setStkInventory(stkInventory);
+					break;
+				}
+			}
+			basMaterialVoList.add(basMaterialVo);
+		});
+
+		List<BasMaterialCategoryVo> dataList = new ArrayList<>();
+		for (BasMaterialCategory basMaterialCategory : basMaterialCategorieList) {
+			BasMaterialCategoryVo basMaterialCategoryVo = BeanUtil.copyProperties(basMaterialCategory, BasMaterialCategoryVo.class);
+			List<BasMaterialVo> infoList = new ArrayList<>();
+			for (BasMaterialVo basMaterial : basMaterialVoList) {
+				if (basMaterial.getCategoryId().equals(basMaterialCategory.getId())) {
+					infoList.add(basMaterial);
+				}
+			}
+			basMaterialCategoryVo.setBasMaterialList(infoList);
+			dataList.add(basMaterialCategoryVo);
+		}
+		return Result.OK(dataList);
+	}
 
 }

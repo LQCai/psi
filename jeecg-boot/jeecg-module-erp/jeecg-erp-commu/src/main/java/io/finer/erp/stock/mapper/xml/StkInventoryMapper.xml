@@ -2,4 +2,19 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.finer.erp.stock.mapper.StkInventoryMapper">
 
+    <select id="summaryList" resultType="java.util.HashMap">
+        SELECT MAX(i.id)                          id,
+               i.material_id,
+               MAX(m.code)                        material_code,
+               MAX(m.`name`)                      material_name,
+               MAX(m.`model`)                     material_model,
+               i.unit_id,
+               SUM(i.qty)                         qty,
+               SUM(i.cost)                        cost,
+               ROUND(SUM(i.cost) / SUM(i.qty), 2) unit_cost
+        FROM stk_inventory i
+                 INNER JOIN bas_material m ON i.material_id = m.id
+        WHERE i.is_closed = 0
+        GROUP BY i.material_id, i.unit_id
+    </select>
 </mapper>
