@@ -1,6 +1,7 @@
 package io.finer.erp.sale.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.entity.SalTicket;
@@ -15,6 +16,7 @@ import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.vo.LoginUser;
 import org.jeecg.common.util.DateUtils;
+import org.jeecg.common.util.FillRuleUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -73,8 +75,14 @@ public class SalTicketServiceImpl extends ServiceImpl<SalTicketMapper, SalTicket
                 return Result.error("请勿对战败商品操作!");
             }
 
+            Object noObj = FillRuleUtil.executeRule("stk_xsck_custom_bill_no", new JSONObject());
+            if (ObjectUtil.isEmpty(noObj)) {
+                return Result.error("未配置订单号规则，请联系管理员!");
+            }
+
             SalTicket salTicket = new SalTicket() {{
-                setNo(generalNo());
+                assert noObj != null;
+                setNo(noObj.toString());
                 setNoDate(DateUtils.getDate());
                 setSrcNo(srcNo);
                 setCustomerId(salShoppingCart.getCustomerId());

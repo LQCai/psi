@@ -1,31 +1,35 @@
 package io.finer.erp.sale.controller;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.finer.erp.sale.entity.SalInquiry;
 import io.finer.erp.sale.enums.SalTicketStatusEnum;
 import io.finer.erp.sale.param.SalTicketAddParam;
+import io.finer.erp.sale.param.SalTicketDeliveryParam;
+import io.finer.erp.stock.entity.StkIo;
+import io.finer.erp.stock.entity.StkIoEntry;
+import io.finer.erp.stock.service.IStkInventoryService;
+import io.finer.erp.stock.service.IStkIoService;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.aspect.annotation.AutoLog;
 import org.jeecg.common.system.vo.LoginUser;
 import org.jeecg.common.util.DateUtils;
+import org.jeecg.common.util.FillRuleUtil;
 import org.jeecg.common.util.oConvertUtils;
 import io.finer.erp.sale.entity.SalTicket;
 import io.finer.erp.sale.service.ISalTicketService;
-
-import java.util.Date;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -61,6 +65,8 @@ import io.swagger.annotations.ApiOperation;
 public class SalTicketController extends JeecgController<SalTicket, ISalTicketService> {
     @Autowired
     private ISalTicketService salTicketService;
+    @Autowired
+    private IStkIoService stkIoService;
 
     /**
      * 分页列表查询
@@ -187,7 +193,13 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
     @ApiOperation(value = "订单-立即下单", notes = "订单-立即下单")
     @PostMapping(value = "/addImmediately")
     public Result<?> addImmediately(@RequestBody SalTicket salTicket) {
-        salTicket.setNo(salTicketService.generalNo());
+        Object noObj = FillRuleUtil.executeRule("stk_xsck_custom_bill_no", new JSONObject());
+        if (ObjectUtil.isEmpty(noObj)) {
+            return Result.error("未配置订单号规则，请联系管理员!");
+        }
+
+        assert noObj != null;
+        salTicket.setNo(noObj.toString());
         salTicket.setSrcNo(salTicketService.generalSrcNo());
         salTicket.setNoDate(DateUtils.getDate());
 
@@ -249,4 +261,45 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
         return Result.ok("审核成功!");
     }
 
+    @AutoLog(value = "订单-发货")
+    @ApiOperation(value = "订单-发货", notes = "订单-发货")
+    @Transactional
+    @PostMapping(value = "/delivery")
+    public Result<?> delivery(@RequestBody SalTicketDeliveryParam salTicketDelivery) throws Exception {
+        SalTicket salTicket = salTicketService.getById(salTicketDelivery.getTicketId());
+        if (ObjectUtil.isEmpty(salTicket)) {
+            return Result.error("订单不存在!");
+        }
+
+        if (salTicket.getStatus().equals(SalTicketStatusEnum.INIT.getStatus())) {
+            return Result.error("订单尚未审核通过!");
+        }
+        if (salTicket.getStatus().equals(SalTicketStatusEnum.SHIPPED.getStatus())) {
+            return Result.error("订单已发货!");
+        }
+
+        salTicket.setDriverName(salTicketDelivery.getDriverName());
+        salTicket.setDriverTel(salTicketDelivery.getDriverTel());
+        salTicket.setDriverCarNumber(salTicketDelivery.getDriverCarNumber());
+        salTicket.setDriverIdCard(salTicketDelivery.getDriverIdCard());
+        salTicket.setStatus(SalTicketStatusEnum.SHIPPED.getStatus());
+        salTicketService.saveOrUpdate(salTicket);
+
+        StkIo stkIo = new StkIo() {{
+            setCustomerId(salTicket.getCustomerId());
+            setBillNo(salTicket.getNo());
+            setBillDate(salTicket.getNoDate());
+            setHasRp(1);
+            setHasSwell(0);
+            setStockIoType("203");
+            setInvoiceType(String.valueOf(salTicket.getInvoiceType()));
+            setIsAuto(0);
+            setIsRubric(0);
+        }};
+        StkIoEntry stkIoEntry = BeanUtil.copyProperties(salTicketDelivery, StkIoEntry.class);
+        stkIoEntry.setEntryNo(10);
+        stkIoService.submitAdd(stkIo, new ArrayList<StkIoEntry>() {{add(stkIoEntry);}});
+
+        return Result.OK("发货成功！");
+    }
 }

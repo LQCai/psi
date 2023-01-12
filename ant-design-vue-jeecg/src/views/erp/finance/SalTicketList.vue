@@ -93,7 +93,7 @@
 
         <span slot='action' slot-scope='text, record'>
 <!--          <a @click='handleEdit(record)'>编辑</a>-->
-          <a v-has="'SalTicket:check'" @click='handleApproval(record)'>审核</a>
+          <a v-has="'SalTicket:check'" @click='handleApproval(record)' v-if='record.status === 0'>审核</a>
 
           <a-divider type='vertical' />
           <a-dropdown>
@@ -102,6 +102,11 @@
               <a-menu-item>
                 <a-popconfirm title='确定删除吗?' @confirm='() => handleDelete(record.id)'>
                   <a>删除</a>
+                </a-popconfirm>
+              </a-menu-item>
+              <a-menu-item v-has="'SalTicket:delivery'" v-if='record.status === 1'>
+                <a-popconfirm title='确定发货吗?' @confirm='() => handleDelivery(record)'>
+                  <a>发货</a>
                 </a-popconfirm>
               </a-menu-item>
             </a-menu>
@@ -114,7 +119,8 @@
 
     <!-- 表单区域 -->
     <salTicket-modal ref='modalForm' @ok='modalFormOk'></salTicket-modal>
-    <common-approval-modal check-url='/sale/salTicket/check' :ids='selectedRowKeys' ref='approvalModalForm' @close='modalFormOk'></common-approval-modal>
+    <common-approval-modal title='订单审核' check-url='/sale/salTicket/check' :ids='selectedRowKeys' ref='approvalModalForm' @close='modalFormOk'></common-approval-modal>
+    <sal-ticket-delivery-modal :ids='selectedRowKeys' ref='deliveryModalForm' @close='modalFormOk'></sal-ticket-delivery-modal>
   </a-card>
 </template>
 
@@ -122,6 +128,7 @@
 import '@/assets/less/TableExpand.less'
 import SalTicketModal from './modules/SalTicketModal'
 import CommonApprovalModal from './modules/CommonApprovalModal'
+import SalTicketDeliveryModal from './modules/SalTicketDeliveryModal'
 import { JeecgListMixin } from '@/mixins/JeecgListMixin'
 
 export default {
@@ -129,7 +136,8 @@ export default {
   mixins: [JeecgListMixin],
   components: {
     SalTicketModal,
-    CommonApprovalModal
+    CommonApprovalModal,
+    SalTicketDeliveryModal
   },
   data() {
     return {
@@ -295,6 +303,9 @@ export default {
   methods: {
     handleApproval(record) {
       this.$refs.approvalModalForm.show([record.id]);
+    },
+    handleDelivery(record) {
+      this.$refs.deliveryModalForm.show(record);
     },
     handleApprovalBatch(ids) {
       if (ids.length === 0) {

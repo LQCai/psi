@@ -106,7 +106,7 @@ public class SalTicket {
 	/**开票方式*/
 	@Excel(name = "开票方式", width = 15)
 	@Dict(
-			dicCode = "x_invoice_method"
+			dicCode = "x_invoice_type"
 	)
     @ApiModelProperty(value = "开票方式")
 	private java.lang.Integer invoiceType;
@@ -130,6 +130,20 @@ public class SalTicket {
 	@Excel(name = "审核意见", width = 15)
     @ApiModelProperty(value = "审核意见")
 	private java.lang.String approvalRemark;
+
+	@Excel(name = "驾驶人姓名", width = 15)
+	@ApiModelProperty(value = "驾驶人姓名")
+	private String driverName;
+	@Excel(name = "驾驶人电话", width = 15)
+	@ApiModelProperty(value = "驾驶人电话")
+	private String driverTel;
+	@Excel(name = "驾驶人车牌号", width = 15)
+	@ApiModelProperty(value = "驾驶人车牌号")
+	private String driverCarNumber;
+	@Excel(name = "驾驶人身份证", width = 15)
+	@ApiModelProperty(value = "驾驶人身份证")
+	private String driverIdCard;
+
 	/**创建部门*/
 	@Excel(
 			name = "创建部门",

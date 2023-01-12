@@ -43,13 +43,16 @@ export default {
     checkUrl: {
       type: String,
       required: true
+    },
+    title: {
+      type: String,
+      required: true
     }
   },
   data() {
     return {
       autoExpandParent: true,
       checkStrictly: true,
-      title: '询盘审核',
       visible: false,
       loading: false,
       labelCol: {
