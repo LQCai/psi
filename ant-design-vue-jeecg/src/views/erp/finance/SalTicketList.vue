@@ -95,7 +95,7 @@
 <!--          <a @click='handleEdit(record)'>编辑</a>-->
           <a v-has="'SalTicket:check'" @click='handleApproval(record)' v-if='record.status === 0'>审核</a>
 
-          <a-divider type='vertical' />
+          <a-divider v-has="'SalTicket:check'" v-if='record.status === 0' type='vertical' />
           <a-dropdown>
             <a class='ant-dropdown-link'>更多 <a-icon type='down' /></a>
             <a-menu slot='overlay'>
@@ -109,6 +109,9 @@
                   <a>发货</a>
                 </a-popconfirm>
               </a-menu-item>
+              <a-menu-item v-has="'SalTicket:delivery'" v-if='record.status === 2'>
+                <a @click='handleDeliveryUpdate(record)'>修改物流信息</a>
+              </a-menu-item>
             </a-menu>
           </a-dropdown>
         </span>
@@ -120,7 +123,8 @@
     <!-- 表单区域 -->
     <salTicket-modal ref='modalForm' @ok='modalFormOk'></salTicket-modal>
     <common-approval-modal title='订单审核' check-url='/sale/salTicket/check' :ids='selectedRowKeys' ref='approvalModalForm' @close='modalFormOk'></common-approval-modal>
-    <sal-ticket-delivery-modal :ids='selectedRowKeys' ref='deliveryModalForm' @close='modalFormOk'></sal-ticket-delivery-modal>
+    <sal-ticket-delivery-modal ref='deliveryModalForm' @close='modalFormOk'></sal-ticket-delivery-modal>
+    <sal-ticket-delivery-update-modal ref='deliveryUpdateModalForm' @close='modalFormOk'></sal-ticket-delivery-update-modal>
   </a-card>
 </template>
 
@@ -129,6 +133,7 @@ import '@/assets/less/TableExpand.less'
 import SalTicketModal from './modules/SalTicketModal'
 import CommonApprovalModal from './modules/CommonApprovalModal'
 import SalTicketDeliveryModal from './modules/SalTicketDeliveryModal'
+import SalTicketDeliveryUpdateModal from './modules/SalTicketDeliveryUpdateModal'
 import { JeecgListMixin } from '@/mixins/JeecgListMixin'
 
 export default {
@@ -137,7 +142,8 @@ export default {
   components: {
     SalTicketModal,
     CommonApprovalModal,
-    SalTicketDeliveryModal
+    SalTicketDeliveryModal,
+    SalTicketDeliveryUpdateModal
   },
   data() {
     return {
@@ -306,6 +312,9 @@ export default {
     },
     handleDelivery(record) {
       this.$refs.deliveryModalForm.show(record);
+    },
+    handleDeliveryUpdate(record) {
+      this.$refs.deliveryUpdateModalForm.show(record);
     },
     handleApprovalBatch(ids) {
       if (ids.length === 0) {

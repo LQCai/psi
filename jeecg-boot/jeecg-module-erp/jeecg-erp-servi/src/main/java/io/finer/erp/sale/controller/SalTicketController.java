@@ -16,6 +16,7 @@ import io.finer.erp.sale.entity.SalInquiry;
 import io.finer.erp.sale.enums.SalTicketStatusEnum;
 import io.finer.erp.sale.param.SalTicketAddParam;
 import io.finer.erp.sale.param.SalTicketDeliveryParam;
+import io.finer.erp.sale.param.SalTicketDeliveryUpdateParam;
 import io.finer.erp.stock.entity.StkIo;
 import io.finer.erp.stock.entity.StkIoEntry;
 import io.finer.erp.stock.service.IStkInventoryService;
@@ -256,6 +257,12 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
             salTicket.setApprovalResultType(approvalResultType);
             salTicket.setApprovalRemark(approvalRemark);
             salTicket.setApprover(sysUser.getUsername());
+            if (salTicket.getApprovalResultType().equals("1")) {
+                salTicket.setTotalAmt(salTicket.getMaterialAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
+                salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
+            } else {
+                salTicket.setStatus(SalTicketStatusEnum.CLOSE.getStatus());
+            }
         }
         salTicketService.saveOrUpdateBatch(salTicketList);
         return Result.ok("审核成功!");
@@ -301,5 +308,27 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
         stkIoService.submitAdd(stkIo, new ArrayList<StkIoEntry>() {{add(stkIoEntry);}});
 
         return Result.OK("发货成功！");
+    }
+
+    @AutoLog(value = "订单-修改发货信息")
+    @ApiOperation(value = "订单-修改发货信息", notes = "订单-修改发货信息")
+    @Transactional
+    @PostMapping(value = "/deliveryUpdate")
+    public Result<?> deliveryUpdate(@RequestBody SalTicketDeliveryUpdateParam salTicketDelivery) {
+        SalTicket salTicket = salTicketService.getById(salTicketDelivery.getId());
+        if (ObjectUtil.isEmpty(salTicket)) {
+            return Result.error("订单不存在!");
+        }
+
+        if (!salTicket.getStatus().equals(SalTicketStatusEnum.SHIPPED.getStatus())) {
+            return Result.error("订单尚未发货!");
+        }
+
+        salTicket.setDriverName(salTicketDelivery.getDriverName());
+        salTicket.setDriverTel(salTicketDelivery.getDriverTel());
+        salTicket.setDriverCarNumber(salTicketDelivery.getDriverCarNumber());
+        salTicket.setDriverIdCard(salTicketDelivery.getDriverIdCard());
+        salTicketService.saveOrUpdate(salTicket);
+        return Result.ok("修改成功!");
     }
 }
