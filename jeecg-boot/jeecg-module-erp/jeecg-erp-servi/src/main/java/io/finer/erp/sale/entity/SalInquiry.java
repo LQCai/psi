@@ -114,6 +114,16 @@ public class SalInquiry {
 	@Excel(name = "核批意见", width = 15)
     @ApiModelProperty(value = "核批意见")
 	private java.lang.String approvalRemark;
+	@Excel(
+			name = "状态",
+			width = 15.0D,
+			dicCode = "x_inquiry_status"
+	)
+	@Dict(
+			dicCode = "x_inquiry_status"
+	)
+	@ApiModelProperty(value = "状态")
+	private java.lang.Integer status;
 	/**创建部门*/
 	@Excel(
 			name = "创建部门",
