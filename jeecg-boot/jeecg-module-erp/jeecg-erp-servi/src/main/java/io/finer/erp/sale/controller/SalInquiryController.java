@@ -1,21 +1,24 @@
 package io.finer.erp.sale.controller;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import io.finer.erp.base.entity.BasCustomer;
 import io.finer.erp.base.entity.BasMaterial;
+import io.finer.erp.base.service.IBasCustomerService;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
 import io.finer.erp.sale.service.ISalShoppingCartService;
+import io.finer.erp.sale.vo.SalInquiryVo;
+import io.finer.erp.sale.vo.SalShoppingCartVo;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.constant.CommonConstant;
@@ -25,7 +28,9 @@ import org.jeecg.common.system.vo.LoginUser;
 import org.jeecg.common.util.oConvertUtils;
 import io.finer.erp.sale.entity.SalInquiry;
 import io.finer.erp.sale.service.ISalInquiryService;
-import java.util.Date;
+
+import java.util.stream.Collectors;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -62,6 +67,8 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 	private ISalInquiryService salInquiryService;
 	@Autowired
 	private ISalShoppingCartService salShoppingCartService;
+	@Autowired
+	private IBasCustomerService basCustomerService;
 	
 	/**
 	 * 分页列表查询
@@ -244,6 +251,79 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 		 }
 		 salInquiryService.saveOrUpdateBatch(salInquiryList);
 		 return Result.ok("审核提交成功!");
+	 }
+
+	 /**
+	  * 战败记录
+	  *
+	  * @param salInquiry
+	  * @param pageNo
+	  * @param pageSize
+	  * @param req
+	  * @return
+	  */
+	 @AutoLog(value = "询盘 - 战败记录")
+	 @ApiOperation(value="询盘 - 战败记录", notes="询盘 - 战败记录")
+	 @GetMapping(value = "/listFail")
+	 public Result<?> listFail(SalInquiry salInquiry,
+												   @RequestParam(name="pageNo", defaultValue="1") Integer pageNo,
+												   @RequestParam(name="pageSize", defaultValue="10") Integer pageSize,
+												   HttpServletRequest req) {
+		 QueryWrapper<SalInquiry> queryWrapper = QueryGenerator.initQueryWrapper(salInquiry, req.getParameterMap());
+
+		 // 仅显示当前用户关联的数据
+		 LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+		 queryWrapper.lambda().eq(SalInquiry::getOperator, sysUser.getUsername());
+
+		 // 仅获取失败记录
+		 queryWrapper.lambda().eq(SalInquiry::getStatus, 2);
+
+		 Page<SalInquiry> page = new Page<>(pageNo, pageSize);
+		 IPage<SalInquiry> pageList = salInquiryService.page(page, queryWrapper);
+
+		 List<SalInquiry> salInquiryList = pageList.getRecords();
+		 List<String> customerIdList = salInquiryList.stream().map(SalInquiry::getCustomerId).distinct().collect(Collectors.toList());
+		 if (customerIdList.size() == 0) {
+			 return Result.ok(page);
+		 }
+
+		 List<BasCustomer> customerList = basCustomerService.list(Wrappers.<BasCustomer>lambdaQuery()
+				 .in(BasCustomer::getId, customerIdList)
+		 );
+		 List<SalInquiryVo> salInquiryVoList = new ArrayList<>();
+		 salInquiryList.forEach(item -> {
+			 for (BasCustomer customer : customerList) {
+				 if (customer.getId().equals(item.getCustomerId())) {
+					 if (salInquiryVoList.size() == 0) {
+						 SalInquiryVo salInquiryVo = BeanUtil.copyProperties(customer, SalInquiryVo.class);
+						 salInquiryVo.setSalInquiryList(new ArrayList<SalInquiry>() {{
+							 add(item);
+						 }});
+						 salInquiryVoList.add(salInquiryVo);
+						 break;
+					 }
+
+					 if (!salInquiryVoList.stream().map(SalInquiryVo::getId).collect(Collectors.toList()).contains(customer.getId())) {
+						 SalInquiryVo salInquiryVo = BeanUtil.copyProperties(customer, SalInquiryVo.class);
+						 salInquiryVo.setSalInquiryList(new ArrayList<SalInquiry>() {{
+							 add(item);
+						 }});
+						 salInquiryVoList.add(salInquiryVo);
+						 break;
+					 }
+					 for (SalInquiryVo salInquiryVo: salInquiryVoList) {
+						 if (salInquiryVo.getId().equals(customer.getId())) {
+							 salInquiryVo.getSalInquiryList().add(item);
+							 break;
+						 }
+					 }
+				 }
+			 }
+		 });
+		 IPage<SalInquiryVo> list = new Page(pageList.getCurrent(), pageList.getSize(), pageList.getTotal());
+		 list.setRecords(salInquiryVoList);
+
+		 return Result.OK(list);
 	 }
 
 }
