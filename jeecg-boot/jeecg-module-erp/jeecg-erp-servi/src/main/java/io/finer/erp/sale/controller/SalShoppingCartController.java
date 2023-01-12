@@ -1,13 +1,15 @@
 package io.finer.erp.sale.controller;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import io.finer.erp.base.entity.BasCustomer;
 import io.finer.erp.base.entity.BasMaterial;
+import io.finer.erp.base.service.IBasCustomerService;
 import io.finer.erp.base.service.IBasMaterialService;
 import io.finer.erp.sale.entity.SalInquiry;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
@@ -15,12 +17,10 @@ import io.finer.erp.sale.service.ISalInquiryService;
 import io.finer.erp.sale.vo.SalShoppingCartVo;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
-import org.jeecg.common.constant.CommonConstant;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.aspect.annotation.AutoLog;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.service.ISalShoppingCartService;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,19 +30,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.system.base.controller.JeecgController;
 import org.jeecg.common.system.vo.LoginUser;
-import org.jeecg.common.util.oConvertUtils;
-import org.jeecgframework.poi.excel.ExcelImportUtil;
-import org.jeecgframework.poi.excel.def.NormalExcelConstants;
-import org.jeecgframework.poi.excel.entity.ExportParams;
-import org.jeecgframework.poi.excel.entity.ImportParams;
-import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
-import org.springframework.web.servlet.ModelAndView;
-import com.alibaba.fastjson.JSON;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
@@ -63,6 +53,8 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 	private IBasMaterialService basMaterialService;
 	@Autowired
 	private ISalInquiryService salInquiryService;
+	@Autowired
+	private IBasCustomerService basCustomerService;
 	
 	/**
 	 * 分页列表查询
@@ -88,24 +80,7 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 
 		Page<SalShoppingCart> page = new Page<>(pageNo, pageSize);
 		IPage<SalShoppingCart> pageList = salShoppingCartService.page(page, queryWrapper);
-
-		List<SalShoppingCart> salShoppingCartList = pageList.getRecords();
-		List<SalShoppingCartVo> salShoppingCartVoList = salShoppingCartList.stream().map(item -> BeanUtil.copyProperties(item, SalShoppingCartVo.class)).collect(Collectors.toList());
-		List<String> inquiryIdList = salShoppingCartList.stream().map(SalShoppingCart::getInquiryId).distinct().collect(Collectors.toList());
-		if (inquiryIdList.size() != 0) {
-			List<SalInquiry> salInquiryList = salInquiryService.list(Wrappers.<SalInquiry>lambdaQuery()
-					.in(SalInquiry::getId, inquiryIdList)
-			);
-			salShoppingCartVoList.forEach(item -> salInquiryList.forEach(salInquiry -> {
-				if (ObjectUtil.isNotEmpty(item.getInquiryId()) && item.getInquiryId().equals(salInquiry.getId())) {
-					item.setInquiryApprovalResultType(salInquiry.getApprovalResultType());
-				}
-			}));
-		}
-		IPage<SalShoppingCartVo> list = new Page(pageList.getCurrent(), pageList.getSize(), pageList.getTotal());
-		list.setRecords(salShoppingCartVoList);
-
-		return Result.OK(list);
+		return Result.OK(pageList);
 	}
 	
 	/**
@@ -195,5 +170,75 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 		SalShoppingCart salShoppingCart = salShoppingCartService.getById(id);
 		return Result.OK(salShoppingCart);
 	}
+
+	 /**
+	  * 分页列表根据客户分组
+	  *
+	  * @param salShoppingCart
+	  * @param pageNo
+	  * @param pageSize
+	  * @param req
+	  * @return
+	  */
+	 @AutoLog(value = "购物车-分页列表根据客户分组")
+	 @ApiOperation(value="购物车-分页列表根据客户分组", notes="购物车-分页列表根据客户分组")
+	 @GetMapping(value = "/listGroupByCustomer")
+	 public Result<?> queryPageListGroupByCustomer(SalShoppingCart salShoppingCart,
+									@RequestParam(name="pageNo", defaultValue="1") Integer pageNo,
+									@RequestParam(name="pageSize", defaultValue="10") Integer pageSize,
+									HttpServletRequest req) {
+		 QueryWrapper<SalShoppingCart> queryWrapper = QueryGenerator.initQueryWrapper(salShoppingCart, req.getParameterMap());
+
+		 // 仅显示当前用户关联的数据
+		 LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+		 queryWrapper.lambda().eq(SalShoppingCart::getOperator, sysUser.getUsername());
+
+		 Page<SalShoppingCart> page = new Page<>(pageNo, pageSize);
+		 IPage<SalShoppingCart> pageList = salShoppingCartService.page(page, queryWrapper);
+
+		 List<SalShoppingCart> salShoppingCartList = pageList.getRecords();
+		 List<String> customerIdList = salShoppingCartList.stream().map(SalShoppingCart::getCustomerId).distinct().collect(Collectors.toList());
+		 if (customerIdList.size() == 0) {
+			 return Result.ok(page);
+		 }
+
+		 List<BasCustomer> customerList = basCustomerService.list(Wrappers.<BasCustomer>lambdaQuery()
+				 .in(BasCustomer::getId, customerIdList)
+		 );
+		 List<SalShoppingCartVo> salShoppingCartVoList = new ArrayList<>();
+		 salShoppingCartList.forEach(item -> {
+			 for (BasCustomer customer : customerList) {
+				 if (customer.getId().equals(item.getCustomerId())) {
+					 if (salShoppingCartVoList.size() == 0) {
+						 SalShoppingCartVo salShoppingCartVo = BeanUtil.copyProperties(customer, SalShoppingCartVo.class);
+						 salShoppingCartVo.setSalShoppingCartList(new ArrayList<SalShoppingCart>() {{
+							 add(item);
+						 }});
+						 salShoppingCartVoList.add(salShoppingCartVo);
+						 break;
+					 }
+
+					 if (!salShoppingCartVoList.stream().map(SalShoppingCartVo::getId).collect(Collectors.toList()).contains(customer.getId())) {
+						 SalShoppingCartVo salShoppingCartVo = BeanUtil.copyProperties(customer, SalShoppingCartVo.class);
+						 salShoppingCartVo.setSalShoppingCartList(new ArrayList<SalShoppingCart>() {{
+							 add(item);
+						 }});
+						 salShoppingCartVoList.add(salShoppingCartVo);
+						 break;
+					 }
+					 for (SalShoppingCartVo salShoppingCartVo: salShoppingCartVoList) {
+						 if (salShoppingCartVo.getId().equals(customer.getId())) {
+							 salShoppingCartVo.getSalShoppingCartList().add(item);
+							 break;
+						 }
+					 }
+				 }
+			 }
+		 });
+		 IPage<SalShoppingCartVo> list = new Page(pageList.getCurrent(), pageList.getSize(), pageList.getTotal());
+		 list.setRecords(salShoppingCartVoList);
+
+		 return Result.OK(list);
+	 }
 
 }
