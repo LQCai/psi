@@ -107,7 +107,7 @@ public class SalTicketServiceImpl extends ServiceImpl<SalTicketMapper, SalTicket
             if (salTicket.getQuotedAmt().compareTo(salTicket.getMaterialAmt()) < 0) {
                 salTicket.setStatus(SalTicketStatusEnum.INIT.getStatus());
             } else {
-                salTicket.setTotalAmt(salTicket.getMaterialAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
+                salTicket.setTotalAmt(salTicket.getQuotedAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
                 salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
             }
             salTicketList.add(salTicket);

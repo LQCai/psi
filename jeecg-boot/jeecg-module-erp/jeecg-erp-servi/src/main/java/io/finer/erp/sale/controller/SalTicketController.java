@@ -213,7 +213,7 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
         if (salTicket.getQuotedAmt().compareTo(salTicket.getMaterialAmt()) < 0) {
             salTicket.setStatus(SalTicketStatusEnum.INIT.getStatus());
         } else {
-            salTicket.setTotalAmt(salTicket.getMaterialAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
+            salTicket.setTotalAmt(salTicket.getQuotedAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
             salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
         }
 
@@ -258,7 +258,7 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
             salTicket.setApprovalRemark(approvalRemark);
             salTicket.setApprover(sysUser.getUsername());
             if (salTicket.getApprovalResultType().equals("1")) {
-                salTicket.setTotalAmt(salTicket.getMaterialAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
+                salTicket.setTotalAmt(salTicket.getQuotedAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
                 salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
             } else {
                 salTicket.setStatus(SalTicketStatusEnum.CLOSE.getStatus());
