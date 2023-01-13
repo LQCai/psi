@@ -40,6 +40,10 @@ public class StkIo extends Bill {
     @Dict(dictTable = "bas_supplier", dicText = "name", dicCode = "id")
     @ApiModelProperty(value = "供应商")
     private java.lang.String supplierId;
+    /**港口批次号*/
+    @Excel(name = "港口批次号", width = 15)
+    @ApiModelProperty(value = "港口批次号")
+    private java.lang.String portBatchNo;
     /**客户*/
     @Excel(name = "客户", width = 15, dictTable = "bas_customer", dicText = "name", dicCode = "id")
     @Dict(dictTable = "bas_customer", dicText = "name", dicCode = "id")

@@ -94,7 +94,7 @@
         <span slot='action' slot-scope='text, record'>
 <!--          <a @click='handleEdit(record)'>编辑</a>-->
           <a v-has="'SalInquiry:check'" @click='handleApproval(record)'>审核</a>
-          <a-divider type='vertical' />
+          <a-divider v-has="'SalInquiry:check'" type='vertical' />
           <a v-has="'SalInquiry:delete'">
             <a-popconfirm title='确定删除吗?' @confirm='() => handleDelete(record.id)'>
               <a>删除</a>
@@ -212,31 +212,31 @@ export default {
         //   width:100,
         //   dataIndex: 'billStage'
         // },
-        {
-          title: '审核人',
-          align: 'center',
-          width:100,
-          dataIndex: 'approver_dictText'
-        },
+        // {
+        //   title: '审核人',
+        //   align: 'center',
+        //   width:100,
+        //   dataIndex: 'approver_dictText'
+        // },
         {
           title: '下单意向',
           align: 'center',
           width:100,
           dataIndex: 'intention_dictText'
         },
-        {
-          title: '核批结果',
-          align: 'center',
-          width:100,
-          dataIndex: 'approvalResultType_dictText'
-        },
-        {
-          title: '核批意见',
-          align: 'center',
-          width:160,
-          ellipsis: true,
-          dataIndex: 'approvalRemark'
-        },
+        // {
+        //   title: '核批结果',
+        //   align: 'center',
+        //   width:100,
+        //   dataIndex: 'approvalResultType_dictText'
+        // },
+        // {
+        //   title: '核批意见',
+        //   align: 'center',
+        //   width:160,
+        //   ellipsis: true,
+        //   dataIndex: 'approvalRemark'
+        // },
         {
           title:'创建时间',
           width:160,

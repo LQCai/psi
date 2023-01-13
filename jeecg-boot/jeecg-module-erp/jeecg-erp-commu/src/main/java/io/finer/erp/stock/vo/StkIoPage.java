@@ -47,6 +47,10 @@ public class StkIoPage extends BillPage {
 	@Dict(dictTable = "bas_customer", dicText = "name", dicCode = "id")
 	@ApiModelProperty(value = "客户")
 	private java.lang.String customerId;
+	/**港口批次号*/
+	@Excel(name = "港口批次号", width = 15)
+	@ApiModelProperty(value = "港口批次号")
+	private java.lang.String portBatchNo;
 	/**发票类型*/
 	@Excel(name = "发票类型", width = 15, dicCode = "x_invoice_type")
 	@Dict(dicCode = "x_invoice_type")

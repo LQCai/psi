@@ -1,9 +1,13 @@
 package io.finer.erp.stock.controller;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.finer.erp.port.entity.PortIoEntry;
+import io.finer.erp.port.service.IPortIoEntryService;
 import io.finer.erp.stock.entity.StkIo;
 import io.finer.erp.stock.entity.StkIoEntry;
 import io.finer.erp.stock.service.IStkIoEntryService;
@@ -18,6 +22,7 @@ import org.jeecg.common.aspect.annotation.AutoLog;
 import org.jeecg.common.exception.JeecgBootException;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.system.vo.LoginUser;
+import org.jeecg.common.util.SpringContextUtils;
 import org.jeecg.common.util.oConvertUtils;
 import org.jeecgframework.poi.excel.ExcelImportUtil;
 import org.jeecgframework.poi.excel.def.NormalExcelConstants;
@@ -27,6 +32,7 @@ import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
@@ -34,6 +40,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,6 +59,8 @@ public class StkIoController {
 	private IStkIoService stkIoService;
 	@Autowired
 	private IStkIoEntryService stkIoEntryService;
+	@Autowired
+	private IPortIoEntryService portIoEntryService;
 
 	/**
 	 * 分页列表查询
@@ -150,12 +159,18 @@ public class StkIoController {
 	*/
 	@AutoLog(value = "出入库单-新增")
 	@ApiOperation(value="出入库单-新增", notes="出入库单-新增")
+	@Transactional(rollbackFor = {Exception.class})
 	@PostMapping(value = "/add/{action}")
 	public Result<?> add(@RequestBody StkIoPage stkIoPage, @PathVariable String action) {
 		StkIo bill = new StkIo();
 		BeanUtils.copyProperties(stkIoPage, bill);
 		try {
 			if (action.equals("submit")) {
+				// 如果港口批次不为空 => 表示动作是港口入库, 需要减去港口批次的物料数量
+				if (ObjectUtil.isNotEmpty(bill.getPortBatchNo()) && bill.getStockIoType().equals("200")) {
+					portIoEntryService.increase(bill, stkIoPage.getStkIoEntryList());
+				}
+
 				stkIoService.submitAdd(bill, stkIoPage.getStkIoEntryList());
 				return Result.OK("新增提交成功！");
 			} else {

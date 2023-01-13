@@ -2,6 +2,8 @@ package io.finer.erp.port.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import io.finer.erp.port.entity.PortIoEntry;
+import io.finer.erp.stock.entity.StkIo;
+import io.finer.erp.stock.entity.StkIoEntry;
 
 import java.util.List;
 
@@ -14,4 +16,5 @@ import java.util.List;
 public interface IPortIoEntryService extends IService<PortIoEntry> {
 	List<PortIoEntry> selectByMainId(String mainId);
 	List<PortIoEntry> selectEditingByMainId(String mainId);
+	void increase(StkIo stkIo, List<StkIoEntry> stkIoEntryList);
 }

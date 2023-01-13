@@ -3,6 +3,7 @@ package io.finer.erp.port.controller;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.finer.erp.port.entity.PortIo;
 import io.finer.erp.port.entity.PortIoEntry;
@@ -406,5 +407,19 @@ public class PortIoController {
 			 }
 		 }
 		 return Result.OK("文件导入失败！");
+	 }
+
+	 /**
+	  * 明细 - 通过batchNos列表查询
+	  *
+	  */
+	 //@AutoLog(value = "出入库单-明细 - 通过batchNos列表查询")
+	 @ApiOperation(value="出入库单-明细 - 通过batchNos列表查询", notes="出入库单-明细 - 通过batchNos列表查询")
+	 @GetMapping(value = "/entryListByBatchNos")
+	 public Result<List<PortIoEntry>> listByBatchNos(@RequestParam(name="batchNos",required=true) String batchNos) {
+		 List<PortIoEntry> list = portIoEntryService.list(Wrappers.<PortIoEntry>lambdaQuery()
+				 .in(PortIoEntry::getBatchNo, Arrays.asList(batchNos.split(",")))
+		 );
+		 return Result.OK(list);
 	 }
  }

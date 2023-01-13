@@ -145,6 +145,7 @@
   import TableColumnsSetter from '../common/components/TableColumnsSetter'
   import { BillListMixin } from '../common/mixins/BillListMixin'
   import XEUtils from "xe-utils";
+  import dateFormat from '../../../components/jeecg/JEasyCron/format-date'
 
   export default {
     name: "PortInList",
@@ -165,14 +166,12 @@
             title: '#',
             dataIndex: '',
             key:'rowIndex',
-            fixed: 'left',
             width:40,
             align:"center",
             customRender: (t,r,index)=>parseInt(index)+1
           },
           {
             title:'单据编号',
-            fixed: 'left',
             width:160,
             align:"center",
             dataIndex: 'billNo',
@@ -190,23 +189,23 @@
           {
             title:'单据主题',
             align:"left",
+            width:100,
             dataIndex: 'subject',
             ellipsis: true,
             sorter: true
           },
-          {
-            title:'源单号',
-            width:160,
-            align:"center",
-            dataIndex: 'srcNo',
-            sorter: true
-          },
+          // {
+          //   title:'源单号',
+          //   width:160,
+          //   align:"center",
+          //   dataIndex: 'srcNo',
+          //   sorter: true
+          // },
           {
             title:'入港时间',
-            width:100,
+            width:160,
             align:"center",
             dataIndex: 'inPortTime',
-            customRender: t => !t ? "" : (t.length > 10 ? t.substr(0, 10) : t),
             sorter: true
           },
           {
@@ -214,6 +213,18 @@
             width:100,
             align:"center",
             dataIndex: 'freeDemurrage',
+            sorter: true
+          },
+          {
+            title:'免柜到期时间',
+            width:160,
+            align:"center",
+            customRender: function (t, r, index) {
+              let date = new Date(r.inPortTime)
+              date = date.setDate(date.getDate() + r.freeDemurrage)
+              date = new Date(date)
+              return dateFormat(date, 'yyyy-MM-dd hh:mm:ss');
+            },
             sorter: true
           },
           {
@@ -226,25 +237,26 @@
           {
             title:'供应商',
             align:"left",
+            width:120,
             dataIndex: 'supplierId_dictText',
             ellipsis: true,
             sorter: true
           },
-          {
-            title:'业务部门',
-            width:120,
-            align:"center",
-            dataIndex: 'opDept_dictText',
-            ellipsis: true,
-            sorter: true
-          },
-          {
-            title:'业务员',
-            width:90,
-            align:"center",
-            dataIndex: 'operator_dictText',
-            sorter: true
-          },
+          // {
+          //   title:'业务部门',
+          //   width:120,
+          //   align:"center",
+          //   dataIndex: 'opDept_dictText',
+          //   ellipsis: true,
+          //   sorter: true
+          // },
+          // {
+          //   title:'业务员',
+          //   width:90,
+          //   align:"center",
+          //   dataIndex: 'operator_dictText',
+          //   sorter: true
+          // },
           {
             title:'入库金额',
             width:100,

@@ -32,34 +32,6 @@
               <a-input v-model="model.subject" placeholder="请输入" :readOnly="disabled"/>
             </a-form-model-item>
           </a-col>
-        <a-col :span="8" >
-            <a-form-model-item label="业务员" :labelCol="labelCol3" :wrapperCol="wrapperCol3" prop="operator" ref="operatorFmi">
-              <a-tooltip :title="!disabled && entryTable.rowCount>0 ? '有明细时不能改变！' : ''" placement="bottom">
-                <j-select-user-by-dep v-model="model.operator" :multi="false" :disabled="disabled || entryTable.rowCount>0"
-                                      @change="val =>{this.resetSrc(); this.onOperatorChange(val); }"/>
-              </a-tooltip>
-            </a-form-model-item>
-          </a-col>
-          <a-col :span="8" >
-            <a-form-model-item label="业务部门" :labelCol="labelCol3" :wrapperCol="wrapperCol3" prop="opDept" ref="opDeptFmi">
-              <j-dict-select-tag v-if="disabled"  v-model="model.opDept"
-                                 dictCode="sys_depart,depart_name,org_code" :disabled="true"/>
-              <a-tooltip v-else :title="entryTable.rowCount>0 ? '有明细时不能改变！' : model.operator && model.operator.length>0 ? '' : '请先选择业务员！'" placement="bottom">
-                <j-dict-select-tag ref="opDept"  v-model="model.opDept" placeholder="请选择"
-                                   :dictCode="`sys_depart,depart_name,org_code,(id IN (SELECT dept_id FROM sys_user_dept WHERE username='${model.operator}'))` "
-                                   :disabled="entryTable.rowCount>0" @change="val => resetSrc()"/>
-              </a-tooltip>
-            </a-form-model-item>
-          </a-col>
-          <a-col :span="8" >
-            <a-form-model-item label="供应商" :labelCol="labelCol3" :wrapperCol="wrapperCol3" prop="supplierId" ref="supplierIdFmi">
-              <a-tooltip :title="!disabled && entryTable.rowCount>0 ? '有明细时不能改变！' : ''" placement="bottom">
-                <j-search-select-tag v-model="model.supplierId" :async="true" dict="bas_supplier,aux_name,id"
-                       :disabled="disabled || entryTable.rowCount>0" @change="val => resetSrc()"/>
-              </a-tooltip>
-            </a-form-model-item>
-          </a-col>
-
           <a-col :span="8">
             <a-form-model-item label="入港时间" :labelCol="labelCol3" :wrapperCol="wrapperCol3" prop="inPortTime">
               <j-date v-model="model.inPortTime" :showTime="true" dateFormat="YYYY-MM-DD HH:mm:ss" style="width: 100%"/>
@@ -171,7 +143,6 @@
           stockIoType: '101', //采购入库
           hasRp: 1,
           hasSwell: 0,
-          supplierId:'',
           operator: '',
           opDept: '',
           invoiceType: '',
@@ -181,7 +152,6 @@
         },
 
         validatorRules: {
-          supplierId: [{required: true, message: '请选择供应商!'}],
           invoiceType: [{required: true, message: '请选择发票类型！'}]
         },
 
@@ -661,22 +631,19 @@
     computed: {
       srcNoPopupParam() {
         const v = {is_closed: 0};
-        v.supplier_id = this.model.supplierId;
         v.operator = this.model.operator;
         v.op_dept = this.model.opDept;
         return v;
       },
 
       tipTitleOfAdd() {
-        if (!this.model.supplierId || this.model.supplierId.length === 0) return "请先选择供应商！";
         //!!model.srcNo: 须使用!!, 将表达式强制转化为bool
         if (!!this.model.srcNo && this.model.srcNo.length > 0) return "请从订单明细中选择添加！";
         return "";
       },
 
       addDisabled() {
-        return !this.model.supplierId || this.model.supplierId.length === 0
-          || !!this.model.srcNo && this.model.srcNo.length > 0;
+        return !!this.model.srcNo && this.model.srcNo.length > 0;
       },
     },
 
@@ -697,7 +664,7 @@
 
       addAfter() {
         this.$refs.billHeader.fillBillNo(
-        'stk_cgrk_bill_no',
+        'stk_crg_bill_no',
         (billNo) => {
           this.$nextTick(() => {
             //异步执行原因，初始空白行增加时，billNo可能还未获得！
@@ -768,9 +735,7 @@
         this.model.srcBillId = row.srcBillId;
         this.model.operator = row.operator;
         this.model.opDept = row.opDept;
-        this.model.supplierId = row.supplierId;
         this.model.invoiceType = row.invoiceType;
-        this.$refs.supplierIdFmi.onFieldChange();
 
         // 加载源单分录
         this.activeKey = this.refKeys[1]
