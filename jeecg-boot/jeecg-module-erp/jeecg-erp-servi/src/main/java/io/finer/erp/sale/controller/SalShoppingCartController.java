@@ -11,10 +11,10 @@ import io.finer.erp.base.entity.BasCustomer;
 import io.finer.erp.base.entity.BasMaterial;
 import io.finer.erp.base.service.IBasCustomerService;
 import io.finer.erp.base.service.IBasMaterialService;
-import io.finer.erp.sale.entity.SalInquiry;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
-import io.finer.erp.sale.service.ISalInquiryService;
 import io.finer.erp.sale.vo.SalShoppingCartVo;
+import io.finer.erp.sale.vo.SalShoppingCartWithStkInventoryVo;
+import io.finer.erp.stock.service.IStkInventoryService;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
@@ -22,6 +22,7 @@ import org.jeecg.common.aspect.annotation.AutoLog;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.service.ISalShoppingCartService;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -52,7 +53,7 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 	@Autowired
 	private IBasMaterialService basMaterialService;
 	@Autowired
-	private ISalInquiryService salInquiryService;
+	private IStkInventoryService stkInventoryService;
 	@Autowired
 	private IBasCustomerService basCustomerService;
 	
@@ -202,11 +203,22 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 			 return Result.ok(page);
 		 }
 
+		 List<Map<String, Object>> stkInventoryList = stkInventoryService.summaryListInMaterialIds(salShoppingCartList.stream().map(SalShoppingCart::getMaterialId).collect(Collectors.toList()));
+		 List<SalShoppingCartWithStkInventoryVo> salShoppingCartWithStkInventoryVoList = salShoppingCartList.stream().map(item -> BeanUtil.copyProperties(item, SalShoppingCartWithStkInventoryVo.class)).collect(Collectors.toList());
+		 salShoppingCartWithStkInventoryVoList.forEach(item -> {
+			 for (Map<String, Object> stkInventory: stkInventoryList) {
+				 if (item.getMaterialId().equals(stkInventory.get("material_id"))) {
+					 item.setStkInventory(stkInventory);
+					 break;
+				 }
+			 }
+		 });
+
 		 List<BasCustomer> customerList = basCustomerService.list(Wrappers.<BasCustomer>lambdaQuery()
 				 .in(BasCustomer::getId, customerIdList)
 		 );
 		 List<SalShoppingCartVo> salShoppingCartVoList = new ArrayList<>();
-		 salShoppingCartList.forEach(item -> {
+		 salShoppingCartWithStkInventoryVoList.forEach(item -> {
 			 for (BasCustomer customer : customerList) {
 				 if (customer.getId().equals(item.getCustomerId())) {
 					 if (salShoppingCartVoList.size() == 0) {

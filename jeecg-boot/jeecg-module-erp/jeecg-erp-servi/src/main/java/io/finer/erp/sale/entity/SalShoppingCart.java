@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.jeecg.common.aspect.annotation.Dict;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.jeecgframework.poi.excel.annotation.Excel;
 
@@ -34,10 +35,12 @@ public class SalShoppingCart {
 	private java.lang.String id;
 	/**业务员*/
 	@Excel(name = "业务员", width = 15)
+	@Dict(dictTable = "sys_user", dicText = "realname", dicCode = "username")
     @ApiModelProperty(value = "业务员")
 	private java.lang.String operator;
 	/**客户*/
 	@Excel(name = "客户", width = 15)
+	@Dict(dictTable = "bas_customer", dicText = "name", dicCode = "id")
 	@ApiModelProperty(value = "客户")
 	private java.lang.String customerId;
 	/**询盘id*/
@@ -46,7 +49,8 @@ public class SalShoppingCart {
 	private java.lang.String inquiryId;
 	/**商品id*/
 	@Excel(name = "商品id", width = 15)
-    @ApiModelProperty(value = "商品id")
+	@Dict(dictTable = "bas_material", dicText = "name", dicCode = "id")
+	@ApiModelProperty(value = "商品id")
 	private java.lang.String materialId;
 	/**报价金额*/
 	@Excel(name = "报价金额", width = 15)
