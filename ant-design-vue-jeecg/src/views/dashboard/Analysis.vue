@@ -153,6 +153,7 @@
 </template>
 
 <script>
+  import { getAction } from '@/api/manage'
   import Bar from '@/components/chart/Bar'
   import HeadInfo from '@/components/tools/HeadInfo'
   import Radar from '@/components/chart/Radar'
@@ -260,6 +261,7 @@
       this.loadData(this.purchaseAmt);
       this.loadData(this.stockBalCost);
       this.loadData(this.doingBill);
+      this.checkPortExpire()
     },
 
     methods: {
@@ -268,6 +270,27 @@
         this.$http.get(data.url)
           .then(res => data.dataSource =  res.result.records)
           .finally(() => data.loading = false);
+      },
+      checkPortExpire() {
+        getAction("/port/portIo/listExpireSoon").then(res => {
+          if (res.success) {
+            const data = res.result
+            data.map(item => {
+              this.$notification.error({
+                message: `免柜到期时间: ${item.freeDemurrageTime}`,
+                description: `${item.portIoEntryList.map(child => {
+                  return `批次: ${child.batchNo}, 数量: ${child.qty} \n`
+                })}`,
+                duration: 10,
+              })
+            })
+          }
+          else {
+            console.log(res.error)
+          }
+        }).catch(error => {
+          console.log(error)
+        })
       },
 
       formatAmt(amt) {

@@ -1,5 +1,8 @@
 package io.finer.erp.port.controller;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.ListUtil;
+import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -9,6 +12,7 @@ import io.finer.erp.port.entity.PortIo;
 import io.finer.erp.port.entity.PortIoEntry;
 import io.finer.erp.port.service.IPortIoEntryService;
 import io.finer.erp.port.service.IPortIoService;
+import io.finer.erp.port.vo.PortIoNotify;
 import io.finer.erp.port.vo.PortIoPage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -414,12 +418,52 @@ public class PortIoController {
 	  *
 	  */
 	 //@AutoLog(value = "出入库单-明细 - 通过batchNos列表查询")
-	 @ApiOperation(value="出入库单-明细 - 通过batchNos列表查询", notes="出入库单-明细 - 通过batchNos列表查询")
+	 @ApiOperation(value="出入港单-明细 - 通过batchNos列表查询", notes="出入港单-明细 - 通过batchNos列表查询")
 	 @GetMapping(value = "/entryListByBatchNos")
 	 public Result<List<PortIoEntry>> listByBatchNos(@RequestParam(name="batchNos",required=true) String batchNos) {
 		 List<PortIoEntry> list = portIoEntryService.list(Wrappers.<PortIoEntry>lambdaQuery()
 				 .in(PortIoEntry::getBatchNo, Arrays.asList(batchNos.split(",")))
 		 );
 		 return Result.OK(list);
+	 }
+
+	 /**
+	  * 即将过期列表
+	  *
+	  */
+	 @ApiOperation(value="出入港单-即将过期列表", notes="出入库单-即将过期列表")
+	 @GetMapping(value = "/listExpireSoon")
+	 public Result<List<PortIoNotify>> queryListExpireSoon() {
+		 List<PortIoEntry> portIoEntryList = portIoEntryService.list(Wrappers.<PortIoEntry>lambdaQuery()
+				 .gt(PortIoEntry::getQty, 0)
+		 );
+
+		 List<String> midList = portIoEntryList.stream().map(PortIoEntry::getMid).collect(Collectors.toList());
+		 List<PortIo> portIoList = portIoService.listByIds(midList);
+
+		 List<PortIoNotify> expireSoonList = new ArrayList<>();
+		 Date today = new Date();
+		 for (PortIo portIo: portIoList) {
+			 // 免柜到期日期
+			 Date freeDemurrageTime = DateUtil.offsetDay(portIo.getInPortTime(), portIo.getFreeDemurrage());
+			 // 免柜到期预先提醒日期
+			 Date expireNotifyTime = DateUtil.offsetDay(freeDemurrageTime, - portIo.getNotifyPreDays());
+			 if (today.after(expireNotifyTime) && today.before(freeDemurrageTime)) {
+				 PortIoNotify portIoNotify = BeanUtil.copyProperties(portIo, PortIoNotify.class);
+				 portIoNotify.setFreeDemurrageTime(freeDemurrageTime);
+				 portIoNotify.setPortIoEntryList(new ArrayList<>());
+				 expireSoonList.add(portIoNotify);
+			 }
+		 }
+
+		 expireSoonList = ListUtil.sortByProperty(expireSoonList, "freeDemurrageTime");
+		 for (PortIoNotify portIoNotify: expireSoonList) {
+			 for (PortIoEntry portIoEntry: portIoEntryList) {
+				 if (portIoEntry.getMid().equals(portIoNotify.getId())) {
+					 portIoNotify.getPortIoEntryList().add(portIoEntry);
+				 }
+			 }
+		 }
+		 return Result.OK(expireSoonList);
 	 }
  }
