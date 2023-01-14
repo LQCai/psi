@@ -8,10 +8,17 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.finer.erp.base.entity.BasMaterial;
+import io.finer.erp.base.entity.BasPort;
+import io.finer.erp.base.entity.BasUnit;
+import io.finer.erp.base.service.IBasMaterialService;
+import io.finer.erp.base.service.IBasPortService;
+import io.finer.erp.base.service.IBasUnitService;
 import io.finer.erp.port.entity.PortIo;
 import io.finer.erp.port.entity.PortIoEntry;
 import io.finer.erp.port.service.IPortIoEntryService;
 import io.finer.erp.port.service.IPortIoService;
+import io.finer.erp.port.vo.PortIoEntryVo;
 import io.finer.erp.port.vo.PortIoNotify;
 import io.finer.erp.port.vo.PortIoPage;
 import io.swagger.annotations.Api;
@@ -57,6 +64,12 @@ public class PortIoController {
 	private IPortIoService portIoService;
 	@Autowired
 	private IPortIoEntryService portIoEntryService;
+	@Autowired
+	private IBasMaterialService basMaterialService;
+	@Autowired
+	private IBasPortService basPortService;
+	@Autowired
+	private IBasUnitService basUnitService;
 
 	/**
 	 * 分页列表查询
@@ -432,11 +445,12 @@ public class PortIoController {
 	  *
 	  */
 	 @ApiOperation(value="出入港单-即将过期列表", notes="出入库单-即将过期列表")
-	 @GetMapping(value = "/listExpireSoon")
+	 @GetMapping(value = "/queryListExpireSoon")
 	 public Result<List<PortIoNotify>> queryListExpireSoon() {
 		 List<PortIoEntry> portIoEntryList = portIoEntryService.list(Wrappers.<PortIoEntry>lambdaQuery()
 				 .gt(PortIoEntry::getQty, 0)
 		 );
+		 List<PortIoEntryVo> portIoEntryVoList = getPortIoEntryVoList(portIoEntryList);
 
 		 List<String> midList = portIoEntryList.stream().map(PortIoEntry::getMid).collect(Collectors.toList());
 		 List<PortIo> portIoList = portIoService.listByIds(midList);
@@ -458,12 +472,44 @@ public class PortIoController {
 
 		 expireSoonList = ListUtil.sortByProperty(expireSoonList, "freeDemurrageTime");
 		 for (PortIoNotify portIoNotify: expireSoonList) {
-			 for (PortIoEntry portIoEntry: portIoEntryList) {
+			 for (PortIoEntryVo portIoEntry: portIoEntryVoList) {
 				 if (portIoEntry.getMid().equals(portIoNotify.getId())) {
 					 portIoNotify.getPortIoEntryList().add(portIoEntry);
 				 }
 			 }
 		 }
 		 return Result.OK(expireSoonList);
+	 }
+
+	 private List<PortIoEntryVo> getPortIoEntryVoList(List<PortIoEntry> portIoEntryList) {
+		 portIoEntryList.forEach(portIoEntry -> BeanUtil.copyProperties(portIoEntry, PortIoEntryVo.class));
+
+		 List<BasUnit> basUnitList = basUnitService.list();
+		 List<BasMaterial> basMaterialList = basMaterialService.list();
+		 List<BasPort> basPortList = basPortService.list();
+
+		 return portIoEntryList.stream().map(portIoEntry ->  {
+			 PortIoEntryVo portIoEntryVo = BeanUtil.copyProperties(portIoEntry, PortIoEntryVo.class);
+
+			 basUnitList.forEach(item -> {
+				 if (item.getId().equals(portIoEntryVo.getUnitId())) {
+					 portIoEntryVo.setUnitName(item.getName());
+				 }
+			 });
+
+			 basMaterialList.forEach(item -> {
+				 if (item.getId().equals(portIoEntryVo.getMaterialId())) {
+					 portIoEntryVo.setMaterialName(item.getAuxName());
+				 }
+			 });
+
+			 basPortList.forEach(item -> {
+				 if (item.getId().equals(portIoEntryVo.getPortId())) {
+					 portIoEntryVo.setPortName(item.getAuxName());
+				 }
+			 });
+
+			 return portIoEntryVo;
+		 }).collect(Collectors.toList());
 	 }
  }

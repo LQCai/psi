@@ -272,16 +272,21 @@
           .finally(() => data.loading = false);
       },
       checkPortExpire() {
-        getAction("/port/portIo/listExpireSoon").then(res => {
+        getAction("/port/portIo/queryListExpireSoon").then(res => {
           if (res.success) {
             const data = res.result
             data.map(item => {
+              let description = ''
+              item.portIoEntryList.forEach(child => {
+                description += `港口: ${child.portName}, 批次: ${child.batchNo}, 商品: ${child.materialName}, 数量: ${child.qty} ${child.unitName} \n\n`
+              })
               this.$notification.error({
                 message: `免柜到期时间: ${item.freeDemurrageTime}`,
-                description: `${item.portIoEntryList.map(child => {
-                  return `批次: ${child.batchNo}, 数量: ${child.qty} \n`
-                })}`,
+                description: description,
                 duration: 10,
+                style: {
+                  whiteSpace: 'pre-wrap',
+                },
               })
             })
           }
