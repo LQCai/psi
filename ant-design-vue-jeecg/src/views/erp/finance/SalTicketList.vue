@@ -8,28 +8,25 @@
 
           <a-col :xl='6' :lg='7' :md='8' :sm='24'>
             <a-form-item label='订单号'>
-              <a-input placeholder='请输入订单号' v-model='queryParam.no'></a-input>
+              <j-input placeholder='请输入订单号' v-model='queryParam.no'></j-input>
             </a-form-item>
           </a-col>
           <a-col :xl='6' :lg='7' :md='8' :sm='24'>
             <a-form-item label='订单日期'>
-              <a-input placeholder='请输入订单日期' v-model='queryParam.noDate'></a-input>
+              <j-date placeholder="请选择开始" class="query-group-cust" v-model="queryParam.noDate_begin"></j-date>
+              <span class="query-group-split-cust"></span>
+              <j-date placeholder="请选择结束" class="query-group-cust" v-model="queryParam.noDate_end"></j-date>
             </a-form-item>
           </a-col>
           <template v-if='toggleSearchStatus'>
             <a-col :xl='6' :lg='7' :md='8' :sm='24'>
-              <a-form-item label='源单号'>
-                <a-input placeholder='请输入源单号' v-model='queryParam.srcNo'></a-input>
-              </a-form-item>
-            </a-col>
-            <a-col :xl='6' :lg='7' :md='8' :sm='24'>
               <a-form-item label='业务员'>
-                <a-input placeholder='请输入业务员' v-model='queryParam.operator'></a-input>
+                <j-input placeholder='请输入业务员' v-model='queryParam.operator'></j-input>
               </a-form-item>
             </a-col>
             <a-col :xl='6' :lg='7' :md='8' :sm='24'>
               <a-form-item label='客户'>
-                <a-input placeholder='请输入客户' v-model='queryParam.customerId'></a-input>
+                <j-search-select-tag v-model="queryParam.customerId" :async="true" dict="bas_customer,aux_name,id" placeholder="请选择"/>
               </a-form-item>
             </a-col>
           </template>

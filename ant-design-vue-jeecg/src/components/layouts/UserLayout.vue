@@ -5,7 +5,7 @@
         <div class="header">
           <a href="/">
             <img src="~@/assets/logo.svg" class="logo" alt="logo">
-            <span class="title">进销存</span>
+            <span class="title">双联信 ERP</span>
           </a>
         </div>
         <div class="desc">

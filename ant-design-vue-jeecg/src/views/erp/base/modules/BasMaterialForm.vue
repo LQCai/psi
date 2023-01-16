@@ -61,6 +61,11 @@
               <j-dict-select-tag v-model="model.isEnabled" dictCode="yn" placeholder="请选择":disabled="disabled"/>
             </a-form-model-item>
           </a-col>
+          <a-col :span='24'>
+            <a-form-model-item label="图标" :labelCol="labelCol" :wrapperCol="wrapperCol">
+              <j-image-upload class="avatar-uploader" text="上传" v-model="model.logo" ></j-image-upload>
+            </a-form-model-item>
+          </a-col>
           <a-col :span="24">
             <a-form-model-item label="备注" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="remark">
               <a-input v-model="model.remark" placeholder="请输入" :disabled="disabled"/>

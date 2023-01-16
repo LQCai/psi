@@ -6,12 +6,12 @@
         <a-row :gutter="24">
           <a-col :xl="6" :lg="7" :md="8" :sm="24">
             <a-form-item label="编码">
-              <a-input placeholder="请输入" v-model="queryParam.code"/>
+              <j-input placeholder="请输入" v-model="queryParam.code"/>
             </a-form-item>
           </a-col>
           <a-col :xl="6" :lg="7" :md="8" :sm="24">
             <a-form-item label="名称">
-              <a-input placeholder="请输入" v-model="queryParam.name"/>
+              <j-input placeholder="请输入" v-model="queryParam.name"/>
             </a-form-item>
           </a-col>
 

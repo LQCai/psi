@@ -78,6 +78,9 @@ public class BasMaterial implements Serializable {
 	@Excel(name = "备注", width = 15)
     @ApiModelProperty(value = "备注")
     private java.lang.String remark;
+    /**图标*/
+    @ApiModelProperty(value = "图标")
+    private java.lang.String logo;
     /**创建人*/
     @Dict(dictTable = "sys_user", dicText = "realname", dicCode = "username")
     @ApiModelProperty(value = "创建人")

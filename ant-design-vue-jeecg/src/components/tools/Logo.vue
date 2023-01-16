@@ -21,7 +21,7 @@
     props: {
       title: {
         type: String,
-        default: '进销存',
+        default: '双联信 ERP',
         required: false
       },
       showTitle: {

@@ -14,10 +14,12 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.finer.erp.base.entity.BasCustomer;
 import io.finer.erp.base.entity.BasMaterial;
 import io.finer.erp.base.service.IBasCustomerService;
+import io.finer.erp.base.service.IBasMaterialService;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
 import io.finer.erp.sale.service.ISalShoppingCartService;
 import io.finer.erp.sale.vo.SalInquiryVo;
+import io.finer.erp.sale.vo.SalInquiryWithOtherInfoVo;
 import io.finer.erp.sale.vo.SalShoppingCartVo;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
@@ -69,6 +71,8 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 	private ISalShoppingCartService salShoppingCartService;
 	@Autowired
 	private IBasCustomerService basCustomerService;
+	@Autowired
+	private IBasMaterialService basMaterialService;
 	
 	/**
 	 * 分页列表查询
@@ -265,7 +269,7 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 	 @AutoLog(value = "询盘 - 战败记录")
 	 @ApiOperation(value="询盘 - 战败记录", notes="询盘 - 战败记录")
 	 @GetMapping(value = "/listFail")
-	 public Result<?> listFail(SalInquiry salInquiry,
+	 public Result<?> queryListFail(SalInquiry salInquiry,
 												   @RequestParam(name="pageNo", defaultValue="1") Integer pageNo,
 												   @RequestParam(name="pageSize", defaultValue="10") Integer pageSize,
 												   HttpServletRequest req) {
@@ -287,11 +291,29 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 			 return Result.ok(page);
 		 }
 
+		 List<String> materialIdList = salInquiryList.stream().map(SalInquiry::getMaterialId).distinct().collect(Collectors.toList());
+		 List<BasMaterial> basMaterialList = basMaterialService.list(Wrappers.<BasMaterial>lambdaQuery()
+				 .in(BasMaterial::getId, materialIdList)
+		 );
+
+		 // 填充询盘物料对应logo
+		 List<SalInquiryWithOtherInfoVo> salInquiryWithOtherInfoVoList = salInquiryList.stream().map(item -> {
+			 SalInquiryWithOtherInfoVo salInquiryVo = BeanUtil.copyProperties(item, SalInquiryWithOtherInfoVo.class);
+
+			 basMaterialList.forEach(material -> {
+				 if (material.getId().equals(item.getMaterialId())) {
+					 salInquiryVo.setMaterialLogo(material.getLogo());
+				 }
+			 });
+
+			 return salInquiryVo;
+		 }).collect(Collectors.toList());
+
 		 List<BasCustomer> customerList = basCustomerService.list(Wrappers.<BasCustomer>lambdaQuery()
 				 .in(BasCustomer::getId, customerIdList)
 		 );
 		 List<SalInquiryVo> salInquiryVoList = new ArrayList<>();
-		 salInquiryList.forEach(item -> {
+		 salInquiryWithOtherInfoVoList.forEach(item -> {
 			 for (BasCustomer customer : customerList) {
 				 if (customer.getId().equals(item.getCustomerId())) {
 					 if (salInquiryVoList.size() == 0) {

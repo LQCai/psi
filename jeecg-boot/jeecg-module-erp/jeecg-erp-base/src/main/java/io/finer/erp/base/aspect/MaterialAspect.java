@@ -38,7 +38,11 @@ public class MaterialAspect {
 
     // 定义切点Pointcut
     @Pointcut("execution(public * io.finer..*.*Controller.query*EntryList*(..))"
-            + "|| execution(public * io.finer..*.StkInventoryController.query*(..)) ")
+            + "|| execution(public * io.finer..*.StkInventoryController.query*(..)) "
+            + "|| execution(public * io.finer..*.SalTicketController.query*(..)) "
+            + "|| execution(public * io.finer..*.SalShoppingController.query*(..)) "
+            + "|| execution(public * io.finer..*.SalInquiryController.query*(..)) "
+    )
     public void queryPointcut() {
     }
 
@@ -90,6 +94,9 @@ public class MaterialAspect {
                     }
                     if (!jsonObj.containsKey("materialModel")) {
                         jsonObj.put("materialModel", m.getModel());
+                    }
+                    if (!jsonObj.containsKey("logo")) {
+                        jsonObj.put("materialLogo", m.getLogo());
                     }
                 }
             }

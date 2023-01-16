@@ -13,7 +13,7 @@ import io.finer.erp.base.service.IBasCustomerService;
 import io.finer.erp.base.service.IBasMaterialService;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
 import io.finer.erp.sale.vo.SalShoppingCartVo;
-import io.finer.erp.sale.vo.SalShoppingCartWithStkInventoryVo;
+import io.finer.erp.sale.vo.SalShoppingCartWithOtherInfoVo;
 import io.finer.erp.stock.service.IStkInventoryService;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
@@ -138,7 +138,7 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 	 */
 	@AutoLog(value = "购物车-通过id删除")
 	@ApiOperation(value="购物车-通过id删除", notes="购物车-通过id删除")
-	@DeleteMapping(value = "/delete")
+	@PostMapping(value = "/delete")
 	public Result<?> delete(@RequestParam(name="id",required=true) String id) {
 		salShoppingCartService.removeById(id);
 		return Result.OK("删除成功!");
@@ -204,12 +204,22 @@ public class SalShoppingCartController extends JeecgController<SalShoppingCart, 
 		 }
 
 		 List<Map<String, Object>> stkInventoryList = stkInventoryService.summaryListInMaterialIds(salShoppingCartList.stream().map(SalShoppingCart::getMaterialId).collect(Collectors.toList()));
-		 List<SalShoppingCartWithStkInventoryVo> salShoppingCartWithStkInventoryVoList = salShoppingCartList.stream().map(item -> BeanUtil.copyProperties(item, SalShoppingCartWithStkInventoryVo.class)).collect(Collectors.toList());
+		 List<SalShoppingCartWithOtherInfoVo> salShoppingCartWithStkInventoryVoList = salShoppingCartList.stream().map(item -> BeanUtil.copyProperties(item, SalShoppingCartWithOtherInfoVo.class)).collect(Collectors.toList());
+
+		 List<String> materialIdList = salShoppingCartList.stream().map(SalShoppingCart::getMaterialId).distinct().collect(Collectors.toList());
+		 List<BasMaterial> basMaterialList = basMaterialService.list(Wrappers.<BasMaterial>lambdaQuery()
+				 .in(BasMaterial::getId, materialIdList)
+		 );
+
 		 salShoppingCartWithStkInventoryVoList.forEach(item -> {
 			 for (Map<String, Object> stkInventory: stkInventoryList) {
 				 if (item.getMaterialId().equals(stkInventory.get("material_id"))) {
 					 item.setStkInventory(stkInventory);
-					 break;
+				 }
+			 }
+			 for (BasMaterial basMaterial: basMaterialList) {
+				 if (item.getMaterialId().equals(basMaterial.getId())) {
+					 item.setMaterialLogo(basMaterial.getLogo());
 				 }
 			 }
 		 });
