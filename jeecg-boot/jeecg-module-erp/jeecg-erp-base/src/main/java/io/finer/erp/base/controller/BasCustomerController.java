@@ -1,7 +1,6 @@
 package io.finer.erp.base.controller;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -20,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.jeecg.common.system.base.controller.JeecgController;
 import org.jeecg.common.system.vo.LoginUser;
+import org.jeecg.common.util.ChineseCharacterUtil;
 import org.jeecg.common.util.oConvertUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -201,6 +201,40 @@ public class BasCustomerController extends JeecgController<BasCustomer, IBasCust
 		 basCustomerList.forEach(customer -> customer.setOperator(operator));
 		 basCustomerService.saveOrUpdateBatch(basCustomerList);
 		 return Result.OK("操作成功!");
+	 }
+
+	 /**
+	  * 根据姓名首字母排序
+	  *
+	  * @param basCustomer
+	  * @param req
+	  * @return
+	  */
+	 @ApiOperation(value="客户-根据姓名首字母排序", notes="客户-根据姓名首字母排序")
+	 @GetMapping(value = "/listGroupByNameInitial")
+	 public Result<?> queryListGroupByNameInitial(BasCustomer basCustomer, HttpServletRequest req) {
+		 QueryWrapper<BasCustomer> queryWrapper = QueryGenerator.initQueryWrapper(basCustomer, req.getParameterMap());
+
+		 // 如果当前用户只是普通用户, 仅显示属于自己的客户
+		 LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+		 if(oConvertUtils.isNotEmpty(sysUser.getUserIdentity()) && sysUser.getUserIdentity().equals(CommonConstant.USER_IDENTITY_1)) {
+			 queryWrapper.lambda().eq(BasCustomer::getOperator, sysUser.getUsername());
+		 }
+
+		 List<BasCustomer> list = basCustomerService.list(queryWrapper);
+
+		 Map<String, List<BasCustomer>> data = new HashMap<>();
+		 List<String> letterList = Arrays.asList("A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z".split(","));
+		 letterList.forEach(letter -> {
+			 List<BasCustomer> basCustomerList = new ArrayList<>();
+			 list.forEach(customer -> {
+				 if (ChineseCharacterUtil.getFirstLetter(customer.getName()).toUpperCase().equals(letter)) {
+					 basCustomerList.add(customer);
+				 }
+			 });
+			 data.put(letter, basCustomerList);
+		 });
+		 return Result.OK(data);
 	 }
 
 }
