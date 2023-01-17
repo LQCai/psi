@@ -234,6 +234,16 @@ public class BasCustomerController extends JeecgController<BasCustomer, IBasCust
 			 });
 			 data.put(letter, basCustomerList);
 		 });
+
+		 // 首字母是特殊字符的客户列表
+		 List<BasCustomer> specialCharacterCustomerList = new ArrayList<>();
+		 list.forEach(customer -> {
+			 if (!letterList.contains(ChineseCharacterUtil.getFirstLetter(customer.getName()).toUpperCase())) {
+				 specialCharacterCustomerList.add(customer);
+			 }
+		 });
+		 data.put("#", specialCharacterCustomerList);
+
 		 return Result.OK(data);
 	 }
 

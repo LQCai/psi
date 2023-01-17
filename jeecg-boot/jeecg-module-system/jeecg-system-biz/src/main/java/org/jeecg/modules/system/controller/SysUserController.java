@@ -594,7 +594,7 @@ public class SysUserController {
 	 */
     //@RequiresRoles({"admin"})
     @ApiOperation(value="首页用户重置密码", notes="首页用户重置密码")
-    @RequestMapping(value = "/updatePassword", method = RequestMethod.PUT)
+    @RequestMapping(value = "/updatePassword", method = {RequestMethod.PUT, RequestMethod.POST} )
 	public Result<?> updatePassword(@RequestBody JSONObject json) {
 		String username = json.getString("username");
 		String oldpassword = json.getString("oldpassword");

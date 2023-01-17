@@ -1,5 +1,6 @@
 package io.finer.erp.sale.controller;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -8,13 +9,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.finer.erp.base.entity.BasCustomer;
 import io.finer.erp.base.entity.BasMaterial;
+import io.finer.erp.base.entity.BasUnit;
 import io.finer.erp.base.service.IBasCustomerService;
 import io.finer.erp.base.service.IBasMaterialService;
+import io.finer.erp.base.service.IBasUnitService;
+import io.finer.erp.base.vo.BasMaterialStatisticsVo;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
 import io.finer.erp.sale.service.ISalShoppingCartService;
@@ -73,6 +78,8 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 	private IBasCustomerService basCustomerService;
 	@Autowired
 	private IBasMaterialService basMaterialService;
+	@Autowired
+	private IBasUnitService basUnitService;
 	
 	/**
 	 * 分页列表查询
@@ -346,6 +353,52 @@ public class SalInquiryController extends JeecgController<SalInquiry, ISalInquir
 		 list.setRecords(salInquiryVoList);
 
 		 return Result.OK(list);
+	 }
+
+	 /**
+	  * 询盘 - 统计物料
+	  *
+	  * @return
+	  */
+	 @ApiOperation(value="询盘 - 统计物料", notes="询盘 - 统计物料")
+	 @GetMapping(value = "/statisticsMaterial")
+	 public Result<List<BasMaterialStatisticsVo>> queryStatisticsMaterial() {
+		 Date now = new Date();
+		 List<SalInquiry> salInquiryList = salInquiryService.list(Wrappers.<SalInquiry>lambdaQuery()
+				 .between(SalInquiry::getCreateTime, DateUtil.beginOfDay(DateUtil.offsetDay(now, -7)), DateUtil.endOfDay(now))
+				 .orderByDesc(SalInquiry::getCreateTime)
+		 );
+
+		 if (salInquiryList.size() == 0) {
+			 return Result.ok(new ArrayList<>());
+		 }
+
+		 List<BasUnit> basUnitList = basUnitService.list();
+
+		 List<BasMaterial> basMaterialList = basMaterialService.list(Wrappers.<BasMaterial>lambdaQuery()
+				 .in(BasMaterial::getId, salInquiryList.stream().map(SalInquiry::getMaterialId).collect(Collectors.toList()))
+		 );
+		 List<BasMaterialStatisticsVo> basMaterialStatisticsVoList = new ArrayList<>();
+		 for (BasMaterial basMaterial: basMaterialList) {
+			 BasMaterialStatisticsVo basMaterialStatisticsVo = BeanUtil.copyProperties(basMaterial, BasMaterialStatisticsVo.class);
+			 basMaterialStatisticsVo.setSalInquiryQty(new BigDecimal(0));
+			 salInquiryList.forEach(salInquiry -> {
+				 if (salInquiry.getMaterialId().equals(basMaterial.getId())) {
+					 basMaterialStatisticsVo.setSalInquiryQty(basMaterialStatisticsVo.getSalInquiryQty().add(new BigDecimal(salInquiry.getMaterialCount())));
+				 }
+			 });
+
+			 basUnitList.forEach(basUnit -> {
+				 if (basUnit.getId().equals(basMaterial.getUnitId())) {
+					 basMaterialStatisticsVo.setUnitName(basUnit.getName());
+				 }
+			 });
+			 basMaterialStatisticsVoList.add(basMaterialStatisticsVo);
+		 };
+
+		 basMaterialStatisticsVoList.sort(Comparator.comparing(BasMaterialStatisticsVo::getSalInquiryQty).reversed());
+
+		 return Result.ok(basMaterialStatisticsVoList);
 	 }
 
 }

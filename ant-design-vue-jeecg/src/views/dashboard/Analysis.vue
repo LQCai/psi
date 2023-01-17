@@ -39,6 +39,36 @@
       </a-col>
     </a-row>
 
+    <a-row :gutter="[24, 24]">
+      <a-col :xl="24" :lg="24" :md="24" :sm="24" :xs="24">
+        <a-card title="港口到期提醒" :loading="portExpireSoon.loading" :bordered="false" :body-style="{ padding: '6' }">
+          <template #extra><a @click="loadPortExpireSoon(portExpireSoon)"><a-icon type="sync" /></a></template>
+          <a-row>
+            <template v-if='portExpireSoon.dataSource.length === 0'>
+              <h3 style='text-align: center'>暂无数据</h3>
+            </template>
+            <template v-for="rec in portExpireSoon.dataSource" v-else>
+              <h3>{{ `免柜到期时间: ${rec.freeDemurrageTime}` }}</h3>
+              <a-row v-for='child in rec.portIoEntryList' style='margin-bottom: 10px'>
+                <a-col span='6'>
+                  {{ `港口: ${child.portName}` }}
+                </a-col>
+                <a-col span='6'>
+                  {{ `批次: ${child.batchNo}` }}
+                </a-col>
+                <a-col span='6'>
+                  {{ `商品: ${child.materialName}` }}
+                </a-col>
+                <a-col span='6'>
+                  {{ `数量: ${child.qty} ${child.unitName}` }}
+                </a-col>
+              </a-row>
+            </template>
+          </a-row>
+        </a-card>
+      </a-col>
+    </a-row>
+
     <a-row :gutter="[8, 8]">
       <a-col :xl="12" :lg="24" :md="24" :sm="24" :xs="24">
         <a-row :gutter="[8, 8]">
@@ -149,6 +179,33 @@
       </a-col>
     </a-row>
 
+    <a-row :gutter="[12, 12]">
+      <a-col :xl="12" :lg="12" :md="24" :sm="24" :xs="24">
+        <a-card title="近七日询盘统计" :loading="inquiryMaterial.loading" :bordered="false" :body-style="{ padding: '6' }">
+          <template #extra><a @click="loadStatisticsMaterial(inquiryMaterial)"><a-icon type="sync" /></a></template>
+          <a-row>
+            <template v-if='inquiryMaterial.dataSource.length === 0'>
+              <h3 style='text-align: center'>暂无数据</h3>
+            </template>
+            <template v-for="item in inquiryMaterial.dataSource" v-else>
+              <a-row style='margin-bottom: 10px'>
+                <a-col span='8'>
+                  <a-avatar shape="square" :src="getAvatarView(item.logo)" icon="experiment"/>
+                  {{ ` ${item.name}` }}
+                </a-col>
+                <a-col span='8'>
+                  {{ `物料单价: ${item.salePrice} 元` }}
+                </a-col>
+                <a-col span='8'>
+                  {{ `询盘数量: ${item.salInquiryQty} ${item.unitName}` }}
+                </a-col>
+              </a-row>
+            </template>
+          </a-row>
+        </a-card>
+      </a-col>
+    </a-row>
+
    </div>
 </template>
 
@@ -159,6 +216,8 @@
   import Radar from '@/components/chart/Radar'
   import '@/assets/less/TableExpand.less'
   import XEUtils from "xe-utils";
+  import Template1 from '../jeecg/JVxeDemo/layout-demo/Template1'
+  import { getFileAccessHttpUrl } from '../../api/manage'
 
   const barData = []
   for (let i = 0; i < 12; i += 1) {
@@ -170,7 +229,7 @@
 
   export default {
     name: "Analysis",
-    components: { HeadInfo, Radar,Bar },
+    components: { Template1, HeadInfo, Radar,Bar },
     data() {
       return {
         summary: {
@@ -246,7 +305,16 @@
               dataIndex: 'exec',
             },
           ],
-        }
+        },
+
+        portExpireSoon: {
+          loading: false,
+          dataSource: [],
+        },
+        inquiryMaterial: {
+          loading: false,
+          dataSource: [],
+        },
       }
     },
 
@@ -261,41 +329,31 @@
       this.loadData(this.purchaseAmt);
       this.loadData(this.stockBalCost);
       this.loadData(this.doingBill);
-      this.checkPortExpire()
+      this.loadPortExpireSoon(this.portExpireSoon)
+      this.loadStatisticsMaterial(this.inquiryMaterial)
     },
 
     methods: {
+      getAvatarView: function (avatar) {
+        return getFileAccessHttpUrl(avatar)
+      },
       loadData(data) {
         data.loading = true;
         this.$http.get(data.url)
           .then(res => data.dataSource =  res.result.records)
           .finally(() => data.loading = false);
       },
-      checkPortExpire() {
-        getAction("/port/portIo/queryListExpireSoon").then(res => {
-          if (res.success) {
-            const data = res.result
-            data.map(item => {
-              let description = ''
-              item.portIoEntryList.forEach(child => {
-                description += `港口: ${child.portName}, 批次: ${child.batchNo}, 商品: ${child.materialName}, 数量: ${child.qty} ${child.unitName} \n\n`
-              })
-              this.$notification.error({
-                message: `免柜到期时间: ${item.freeDemurrageTime}`,
-                description: description,
-                duration: 10,
-                style: {
-                  whiteSpace: 'pre-wrap',
-                },
-              })
-            })
-          }
-          else {
-            console.log(res.error)
-          }
-        }).catch(error => {
-          console.log(error)
-        })
+      loadPortExpireSoon(data) {
+        data.loading = true;
+        this.$http.get('/port/portIo/queryListExpireSoon')
+          .then(res => data.dataSource =  res.result)
+          .finally(() => data.loading = false);
+      },
+      loadStatisticsMaterial(data) {
+        data.loading = true;
+        this.$http.get('/sale/salInquiry/statisticsMaterial?field=id,,,code,name,auxName,categoryId_dictText,model,unitId_dictText,salePrice,taxCode,isEnabled_dictText,remark,createTime,createBy_dictText,updateTime,updateBy_dictText')
+          .then(res => data.dataSource =  res.result)
+          .finally(() => data.loading = false);
       },
 
       formatAmt(amt) {
