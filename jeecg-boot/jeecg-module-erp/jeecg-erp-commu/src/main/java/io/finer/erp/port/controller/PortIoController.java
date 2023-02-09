@@ -453,6 +453,9 @@ public class PortIoController {
 		 List<PortIoEntryVo> portIoEntryVoList = getPortIoEntryVoList(portIoEntryList);
 
 		 List<String> midList = portIoEntryList.stream().map(PortIoEntry::getMid).collect(Collectors.toList());
+		 if (midList.size() <= 0) {
+			 return Result.OK(new ArrayList<>());
+		 }
 		 List<PortIo> portIoList = portIoService.listByIds(midList);
 
 		 List<PortIoNotify> expireSoonList = new ArrayList<>();
