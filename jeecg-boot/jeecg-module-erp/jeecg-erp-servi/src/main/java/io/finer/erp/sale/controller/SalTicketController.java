@@ -76,7 +76,7 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
      */
     @AutoLog(value = "订单-分页列表查询")
     @ApiOperation(value = "订单-分页列表查询", notes = "订单-分页列表查询")
-    @GetMapping(value = "/list")
+    @GetMapping(value = {"/list", "/list/{status}"})
     public Result<?> queryPageList(SalTicket salTicket,
                                    @RequestParam(name = "pageNo", defaultValue = "1") Integer pageNo,
                                    @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
@@ -163,7 +163,7 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
      * @param request
      * @param salTicket
      */
-    @RequestMapping(value = "/exportXls")
+    @RequestMapping(value = {"/exportXls", "/exportXls/status"})
     public ModelAndView exportXls(HttpServletRequest request, SalTicket salTicket) {
         return super.exportXls(request, salTicket, SalTicket.class, "订单");
     }
@@ -377,8 +377,6 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
             return Result.error("订单状态错误!");
         }
 
-        BigDecimal receivableAmt = finReceivable.getAmt();
-
         String billNo = (String)FillRuleUtil.executeRule("fin_xssk_bill_no", null);
         FinReceipt bill = new FinReceipt();
         // 收款类型: 订单收款
@@ -437,5 +435,25 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
                 .eq(FinReceipt::getSrcBillId, salTicket.getId())
         );
         return Result.OK(receiptList);
+    }
+
+    @AutoLog(value = "订单-确认收货")
+    @ApiOperation(value="订单-确认收货", notes="订单-确认收货")
+    @PostMapping(value = "/confirmReceipted")
+    @Transactional
+    public Result<?> confirmReceipted(@RequestParam(name = "id") String id) throws Exception {
+        SalTicket salTicket = salTicketService.getById(id);
+        if (ObjectUtil.isEmpty(salTicket)) {
+            return Result.error("订单不存在!");
+        }
+        // 付款方式: 货到付款 => 状态变为【待付款】
+        if (salTicket.getPaymentsMethod().equals(1)) {
+            salTicket.setStatus(SalTicketStatusEnum.TO_BE_PAYMENT.getStatus());
+        } else {
+            // 款到发货 => 订单状态为【完成】
+            salTicket.setStatus(SalTicketStatusEnum.COMPLETED.getStatus());
+        }
+        salTicketService.saveOrUpdate(salTicket);
+        return Result.ok("操作成功!");
     }
 }

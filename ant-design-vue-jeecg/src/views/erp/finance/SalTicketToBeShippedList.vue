@@ -48,12 +48,7 @@
     <!-- 操作按钮区域 -->
     <div class='table-operator'>
 <!--      <a-button @click='handleAdd' type='primary' icon='plus'>新增</a-button>-->
-      <a-button @click='handleApprovalBatch(selectedRowKeys)' v-has="'SalTicket:check'" type='primary'>批量审核</a-button>
       <a-button type='primary' icon='download' @click="handleExportXls('订单')">导出</a-button>
-      <a-upload name='file' :showUploadList='false' :multiple='false' :headers='tokenHeader' :action='importExcelUrl'
-                @change='handleImportExcel'>
-        <a-button type='primary' icon='import'>导入</a-button>
-      </a-upload>
       <a-dropdown v-if='selectedRowKeys.length > 0'>
         <a-menu slot='overlay'>
           <a-menu-item key='1' @click='batchDel'>
@@ -90,9 +85,9 @@
 
         <span slot='action' slot-scope='text, record'>
 <!--          <a @click='handleEdit(record)'>编辑</a>-->
-          <a v-has="'SalTicket:check'" @click='handleApproval(record)' v-if='record.status === 0'>审核</a>
+          <a v-has="'SalTicket:delivery'" @click='handleDelivery(record)' v-if='record.status === 1'>发货</a>
 
-          <a-divider v-has="'SalTicket:check'" v-if='record.status === 0' type='vertical' />
+          <a-divider v-has="'SalTicket:delivery'" v-if='record.status === 1' type='vertical' />
           <a-dropdown>
             <a class='ant-dropdown-link'>更多 <a-icon type='down' /></a>
             <a-menu slot='overlay'>
@@ -100,20 +95,6 @@
                 <a-popconfirm title='确定删除吗?' @confirm='() => handleDelete(record.id)'>
                   <a>删除</a>
                 </a-popconfirm>
-              </a-menu-item>
-              <a-menu-item v-has="'SalTicket:receipts'" v-if='record.status === 4'>
-<!--                <a-popconfirm title='确定收款吗?' @confirm='() => handleReceipts(record)'>-->
-<!--                  <a>收款</a>-->
-<!--                </a-popconfirm>-->
-                <a @click='handleReceipts(record)'>收款</a>
-              </a-menu-item>
-              <a-menu-item v-has="'SalTicket:delivery'" v-if='record.status === 1'>
-                <a-popconfirm title='确定发货吗?' @confirm='() => handleDelivery(record)'>
-                  <a>发货</a>
-                </a-popconfirm>
-              </a-menu-item>
-              <a-menu-item v-has="'SalTicket:delivery'" v-if='record.status === 2'>
-                <a @click='handleDeliveryUpdate(record)'>修改物流信息</a>
               </a-menu-item>
             </a-menu>
           </a-dropdown>
@@ -232,11 +213,7 @@ export default {
           align: 'center',
           dataIndex: 'remark'
         },
-        {
-          title: '状态',
-          align: 'center',
-          dataIndex: 'status_dictText'
-        },
+
         {
           title: '结算方式',
           align: 'center',
@@ -300,10 +277,10 @@ export default {
         }
       ],
       url: {
-        list: '/sale/salTicket/list',
+        list: '/sale/salTicket/list/1',
         delete: '/sale/salTicket/delete',
         deleteBatch: '/sale/salTicket/deleteBatch',
-        exportXlsUrl: 'sale/salTicket/exportXls',
+        exportXlsUrl: 'sale/salTicket/exportXls/1',
         importExcelUrl: 'sale/salTicket/importExcel'
       }
     }

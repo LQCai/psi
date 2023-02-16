@@ -108,7 +108,7 @@ public class StkIoServiceImpl
 			if (bill.getStockIoType().startsWith("1")){
 				//finPayableService.createPayable(bill, entryList);
 				finPayableService.createBill(bill);
-			} else if (bill.getStockIoType().startsWith("2")) {
+			} else if (bill.getStockIoType().startsWith("2") && !bill.getBillNo().startsWith("XSCCK")) { // 对订单单据不生效
 				finReceivableService.createBill(bill, "101");
 			}
 		}
