@@ -61,7 +61,7 @@ export default {
       },
 
       model: {
-        ticketId: '',
+        id: '',
         driverName: '',
         driverTel: '',
         driverCarNumber: '',

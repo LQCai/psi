@@ -2,9 +2,6 @@ package io.finer.erp.sale.controller;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -12,14 +9,18 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import io.finer.erp.sale.entity.SalInquiry;
+import io.finer.erp.finance.entity.FinReceipt;
+import io.finer.erp.finance.entity.FinReceiptEntry;
+import io.finer.erp.finance.entity.FinReceivable;
+import io.finer.erp.finance.service.IFinReceiptService;
+import io.finer.erp.finance.service.IFinReceivableService;
 import io.finer.erp.sale.enums.SalTicketStatusEnum;
 import io.finer.erp.sale.param.SalTicketAddParam;
 import io.finer.erp.sale.param.SalTicketDeliveryParam;
 import io.finer.erp.sale.param.SalTicketDeliveryUpdateParam;
+import io.finer.erp.sale.param.SalTicketReceiptsParam;
 import io.finer.erp.stock.entity.StkIo;
 import io.finer.erp.stock.entity.StkIoEntry;
-import io.finer.erp.stock.service.IStkInventoryService;
 import io.finer.erp.stock.service.IStkIoService;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
@@ -28,7 +29,6 @@ import org.jeecg.common.aspect.annotation.AutoLog;
 import org.jeecg.common.system.vo.LoginUser;
 import org.jeecg.common.util.DateUtils;
 import org.jeecg.common.util.FillRuleUtil;
-import org.jeecg.common.util.oConvertUtils;
 import io.finer.erp.sale.entity.SalTicket;
 import io.finer.erp.sale.service.ISalTicketService;
 
@@ -37,19 +37,11 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.jeecg.common.system.base.controller.JeecgController;
-import org.jeecgframework.poi.excel.ExcelImportUtil;
-import org.jeecgframework.poi.excel.def.NormalExcelConstants;
-import org.jeecgframework.poi.excel.entity.ExportParams;
-import org.jeecgframework.poi.excel.entity.ImportParams;
-import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
-import com.alibaba.fastjson.JSON;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
@@ -68,6 +60,10 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
     private ISalTicketService salTicketService;
     @Autowired
     private IStkIoService stkIoService;
+    @Autowired
+    private IFinReceivableService finReceivableService;
+    @Autowired
+    private IFinReceiptService finReceiptService;
 
     /**
      * 分页列表查询
@@ -191,9 +187,10 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
      * @return
      */
     @AutoLog(value = "订单-立即下单")
+    @Transactional
     @ApiOperation(value = "订单-立即下单", notes = "订单-立即下单")
     @PostMapping(value = "/addImmediately")
-    public Result<?> addImmediately(@RequestBody SalTicket salTicket) {
+    public Result<?> addImmediately(@RequestBody SalTicket salTicket) throws Exception {
         Object noObj = FillRuleUtil.executeRule("stk_xsck_custom_bill_no", new JSONObject());
         if (ObjectUtil.isEmpty(noObj)) {
             return Result.error("未配置订单号规则，请联系管理员!");
@@ -212,12 +209,23 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
         // 如果报价金额低于商品金额 => 需要审核
         if (salTicket.getQuotedAmt().compareTo(salTicket.getMaterialAmt()) < 0) {
             salTicket.setStatus(SalTicketStatusEnum.INIT.getStatus());
+            salTicketService.save(salTicket);
         } else {
             salTicket.setTotalAmt(salTicket.getQuotedAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
-            salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
+            // 付款方式: 货到付款 => 状态变为【待发货】
+            if (salTicket.getPaymentsMethod().equals(1)) {
+                salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
+                salTicketService.save(salTicket);
+            } else {
+                // 款到发货 => 订单状态为【待付款】
+                salTicket.setStatus(SalTicketStatusEnum.TO_BE_PAYMENT.getStatus());
+                salTicketService.save(salTicket);
+
+                // 创建应收记录
+                salTicketService.createReceivableBill(salTicket);
+            }
         }
 
-        salTicketService.save(salTicket);
         return Result.OK("下单成功！");
     }
 
@@ -230,7 +238,7 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
     @AutoLog(value = "订单-购物车下单")
     @ApiOperation(value = "订单-购物车下单", notes = "订单-购物车下单")
     @PostMapping(value = "/addFromShoppingCart")
-    public Result<?> addFromShoppingCart(@RequestBody SalTicketAddParam salTicket) {
+    public Result<?> addFromShoppingCart(@RequestBody SalTicketAddParam salTicket) throws Exception {
         return salTicketService.addFromShoppingCart(salTicket);
     }
 
@@ -240,7 +248,7 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
     @Transactional
     public Result<?> check(@RequestParam(name="ids") String ids,
                            @RequestParam(name="approvalResultType") String approvalResultType,
-                           @RequestParam(name="approvalRemark") String approvalRemark) {
+                           @RequestParam(name="approvalRemark") String approvalRemark) throws Exception {
         LoginUser sysUser = (LoginUser) SecurityUtils.getSubject().getPrincipal();
 
         List<SalTicket> salTicketList = salTicketService.list(Wrappers.<SalTicket>lambdaQuery()
@@ -259,7 +267,15 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
             salTicket.setApprover(sysUser.getUsername());
             if (salTicket.getApprovalResultType().equals("1")) {
                 salTicket.setTotalAmt(salTicket.getQuotedAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
-                salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
+                // 付款方式: 货到付款 => 状态变为【待发货】
+                if (salTicket.getPaymentsMethod().equals(1)) {
+                    salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
+                } else {
+                    // 款到发货 => 订单状态为【待付款】
+                    salTicket.setStatus(SalTicketStatusEnum.TO_BE_PAYMENT.getStatus());
+                    // 创建应收记录
+                    salTicketService.createReceivableBill(salTicket);
+                }
             } else {
                 salTicket.setStatus(SalTicketStatusEnum.CLOSE.getStatus());
             }
@@ -307,6 +323,11 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
         stkIoEntry.setEntryNo(10);
         stkIoService.submitAdd(stkIo, new ArrayList<StkIoEntry>() {{add(stkIoEntry);}});
 
+        // 如果付款方式是货到付款 => 发货后创建应收记录
+        if (salTicket.getPaymentsMethod().equals(1)) {
+            salTicketService.createReceivableBill(salTicket);
+        }
+
         return Result.OK("发货成功！");
     }
 
@@ -330,5 +351,91 @@ public class SalTicketController extends JeecgController<SalTicket, ISalTicketSe
         salTicket.setDriverIdCard(salTicketDelivery.getDriverIdCard());
         salTicketService.saveOrUpdate(salTicket);
         return Result.ok("修改成功!");
+    }
+
+    @AutoLog(value = "订单-确认收款")
+    @ApiOperation(value = "订单-确认收款", notes = "订单-确认收款")
+    @Transactional(rollbackFor = {Exception.class})
+    @PostMapping(value = "/confirmReceivable")
+    public Result<?> confirmReceivable(@RequestBody SalTicketReceiptsParam salTicketReceiptsParam) throws Exception {
+        SalTicket salTicket = salTicketService.getById(salTicketReceiptsParam.getId());
+        if (ObjectUtil.isEmpty(salTicket)) {
+            return Result.error("订单不存在!");
+        }
+
+        FinReceivable finReceivable = finReceivableService.getOne(Wrappers.<FinReceivable>lambdaQuery()
+                .eq(FinReceivable::getSrcBillId, salTicket.getId())
+        );
+        if (ObjectUtil.isEmpty(finReceivable)) {
+            return Result.error("订单无需收款!");
+        }
+        if (finReceivable.getIsClosed().equals(1)) {
+            return Result.error("订单收款已结束, 无需收款!");
+        }
+
+        if (!salTicket.getStatus().equals(SalTicketStatusEnum.TO_BE_PAYMENT.getStatus())) {
+            return Result.error("订单状态错误!");
+        }
+
+        BigDecimal receivableAmt = finReceivable.getAmt();
+
+        String billNo = (String)FillRuleUtil.executeRule("fin_xssk_bill_no", null);
+        FinReceipt bill = new FinReceipt();
+        // 收款类型: 订单收款
+        bill.setReceiptType("100");
+        bill.setAmt(salTicketReceiptsParam.getReceiptAmt());
+        bill.setCustomerId(salTicket.getCustomerId());
+        bill.setSrcBillId(salTicket.getId());
+        bill.setBillNo(billNo);
+        bill.setBillDate(new Date());
+
+        FinReceiptEntry finReceiptEntry = new FinReceiptEntry();
+        finReceiptEntry.setAmt(salTicketReceiptsParam.getReceiptAmt());
+        finReceiptEntry.setBillNo(billNo);
+        finReceiptEntry.setSrcBillId(salTicket.getId());
+        finReceiptEntry.setSettleMethod(salTicketReceiptsParam.getSettleMethod());
+        finReceiptEntry.setBankAccountId(salTicketReceiptsParam.getBankAccountId());
+        finReceiptEntry.setEntryNo(10);
+        // 创建收款记录
+        finReceiptService.submitAdd(bill, new ArrayList<FinReceiptEntry>() {{
+            add(finReceiptEntry);
+        }});
+
+        List<FinReceipt> receiptList = finReceiptService.list(Wrappers.<FinReceipt>lambdaQuery()
+                .eq(FinReceipt::getSrcBillId, salTicket.getId())
+        );
+        // 获取已经收款的金额
+        BigDecimal receiptedAmt = new BigDecimal(0);
+        for (FinReceipt receipt: receiptList) {
+            receiptedAmt = receiptedAmt.add(receipt.getAmt());
+        }
+
+        if (salTicket.getTotalAmt().compareTo(receiptedAmt) < 0) {
+            throw new Exception("收款总金额超过订单金额!");
+        } else if (salTicket.getTotalAmt().compareTo(receiptedAmt) == 0) {
+            // 付款方式: 货到付款 => 状态变为【完成】
+            if (salTicket.getPaymentsMethod().equals(1)) {
+                salTicket.setStatus(SalTicketStatusEnum.COMPLETED.getStatus());
+            } else {
+                // 款到发货 => 订单状态为【待发货】
+                salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
+            }
+        }
+        salTicketService.saveOrUpdate(salTicket);
+        return Result.ok("修改成功!");
+    }
+
+    @ApiOperation(value = "订单-收款记录", notes = "订单-收款记录")
+    @GetMapping(value = "/receiptList")
+    public Result<List<FinReceipt>> receiptList(@RequestParam(name = "id", required = true) String id) {
+        SalTicket salTicket = salTicketService.getById(id);
+        if (ObjectUtil.isEmpty(salTicket)) {
+            return Result.error("订单不存在!");
+        }
+
+        List<FinReceipt> receiptList = finReceiptService.list(Wrappers.<FinReceipt>lambdaQuery()
+                .eq(FinReceipt::getSrcBillId, salTicket.getId())
+        );
+        return Result.OK(receiptList);
     }
 }

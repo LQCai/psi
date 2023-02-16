@@ -1,5 +1,6 @@
 package io.finer.erp.finance.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import io.finer.erp.common.service.impl.BillServiceImpl;
 import io.finer.erp.finance.entity.FinReceivable;
 import io.finer.erp.finance.entity.FinReceivableCheckEntry;
@@ -60,13 +61,13 @@ public class FinReceivableServiceImpl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void createBill(StkIo stkIo) throws Exception {
+    public void createBill(StkIo stkIo, String receivableType) throws Exception {
         if (stkIo.getHasRp() == 0) {
             return;
         }
 
         FinReceivable bill = new FinReceivable();
-        bill.setReceivableType("101");
+        bill.setReceivableType(ObjectUtil.isEmpty(receivableType) ? "101" : receivableType);
         bill.setIsRubric(stkIo.getIsRubric());
         bill.setIsAuto(1);
         bill.setSrcBillType(stkIo.getBillType());

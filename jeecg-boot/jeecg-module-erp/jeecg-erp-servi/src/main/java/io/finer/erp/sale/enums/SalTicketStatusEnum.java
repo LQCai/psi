@@ -13,6 +13,8 @@ public enum SalTicketStatusEnum {
     TO_BE_SHIPPED(1,  "待发货"),
     SHIPPED(2,  "已发货"),
     CLOSE(3,  "关闭"),
+    TO_BE_PAYMENT(4,  "待付款"),
+    COMPLETED(5,  "完成"),
     ;
 
     Integer status;

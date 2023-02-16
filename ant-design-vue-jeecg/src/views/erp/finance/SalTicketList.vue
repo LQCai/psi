@@ -101,6 +101,12 @@
                   <a>删除</a>
                 </a-popconfirm>
               </a-menu-item>
+              <a-menu-item v-has="'SalTicket:receipts'" v-if='record.status === 4'>
+<!--                <a-popconfirm title='确定收款吗?' @confirm='() => handleReceipts(record)'>-->
+<!--                  <a>收款</a>-->
+<!--                </a-popconfirm>-->
+                <a @click='handleReceipts(record)'>收款</a>
+              </a-menu-item>
               <a-menu-item v-has="'SalTicket:delivery'" v-if='record.status === 1'>
                 <a-popconfirm title='确定发货吗?' @confirm='() => handleDelivery(record)'>
                   <a>发货</a>
@@ -122,6 +128,7 @@
     <common-approval-modal title='订单审核' check-url='/sale/salTicket/check' :ids='selectedRowKeys' ref='approvalModalForm' @close='modalFormOk'></common-approval-modal>
     <sal-ticket-delivery-modal ref='deliveryModalForm' @close='modalFormOk'></sal-ticket-delivery-modal>
     <sal-ticket-delivery-update-modal ref='deliveryUpdateModalForm' @close='modalFormOk'></sal-ticket-delivery-update-modal>
+    <sal-ticket-receipts-modal ref='receiptsModalForm' @close='modalFormOk'></sal-ticket-receipts-modal>
   </a-card>
 </template>
 
@@ -131,6 +138,7 @@ import SalTicketModal from './modules/SalTicketModal'
 import CommonApprovalModal from './modules/CommonApprovalModal'
 import SalTicketDeliveryModal from './modules/SalTicketDeliveryModal'
 import SalTicketDeliveryUpdateModal from './modules/SalTicketDeliveryUpdateModal'
+import SalTicketReceiptsModal from './modules/SalTicketReceiptsModal'
 import { JeecgListMixin } from '@/mixins/JeecgListMixin'
 
 export default {
@@ -140,6 +148,7 @@ export default {
     SalTicketModal,
     CommonApprovalModal,
     SalTicketDeliveryModal,
+    SalTicketReceiptsModal,
     SalTicketDeliveryUpdateModal
   },
   data() {
@@ -284,6 +293,7 @@ export default {
         },
         {
           title: '操作',
+          width: 100,
           dataIndex: 'action',
           align: 'center',
           scopedSlots: { customRender: 'action' }
@@ -312,6 +322,9 @@ export default {
     },
     handleDeliveryUpdate(record) {
       this.$refs.deliveryUpdateModalForm.show(record);
+    },
+    handleReceipts(record) {
+      this.$refs.receiptsModalForm.show(record);
     },
     handleApprovalBatch(ids) {
       if (ids.length === 0) {

@@ -109,7 +109,7 @@ public class StkIoServiceImpl
 				//finPayableService.createPayable(bill, entryList);
 				finPayableService.createBill(bill);
 			} else if (bill.getStockIoType().startsWith("2")) {
-				finReceivableService.createBill(bill);
+				finReceivableService.createBill(bill, "101");
 			}
 		}
 

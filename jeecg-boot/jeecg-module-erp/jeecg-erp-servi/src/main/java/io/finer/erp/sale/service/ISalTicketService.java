@@ -17,5 +17,7 @@ public interface ISalTicketService extends IService<SalTicket> {
 
     String generalSrcNo();
 
-    Result<?> addFromShoppingCart(SalTicketAddParam salTicketAddParam);
+    Result<?> addFromShoppingCart(SalTicketAddParam salTicketAddParam) throws Exception;
+
+    void createReceivableBill(SalTicket salTicket) throws Exception;
 }

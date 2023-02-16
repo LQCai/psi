@@ -18,7 +18,7 @@ import java.util.List;
 public interface IFinReceivableService extends IBillService<FinReceivable> {
 
     @Transactional(rollbackFor = Exception.class)
-    void createBill(StkIo stkIo) throws Exception;
+    void createBill(StkIo stkIo, String receivableType) throws Exception;
 
     BigDecimal getUncheckedAmt(String id);
 

@@ -3,6 +3,7 @@ package io.finer.erp.sale.service.impl;
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import io.finer.erp.finance.service.IFinReceivableService;
 import io.finer.erp.sale.entity.SalShoppingCart;
 import io.finer.erp.sale.entity.SalTicket;
 import io.finer.erp.sale.enums.SalShoppingCartStatusEnum;
@@ -11,6 +12,7 @@ import io.finer.erp.sale.mapper.SalTicketMapper;
 import io.finer.erp.sale.param.SalTicketAddParam;
 import io.finer.erp.sale.service.ISalShoppingCartService;
 import io.finer.erp.sale.service.ISalTicketService;
+import io.finer.erp.stock.entity.StkIo;
 import io.finer.erp.stock.service.IStkInventoryService;
 import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
@@ -41,7 +43,7 @@ public class SalTicketServiceImpl extends ServiceImpl<SalTicketMapper, SalTicket
     @Autowired
     private ISalShoppingCartService salShoppingCartService;
     @Autowired
-    private IStkInventoryService stkInventoryService;
+    private IFinReceivableService finReceivableService;
 
     @Override
     public String generalNo() {
@@ -55,7 +57,7 @@ public class SalTicketServiceImpl extends ServiceImpl<SalTicketMapper, SalTicket
 
     @Override
     @Transactional
-    public Result<?> addFromShoppingCart(SalTicketAddParam salTicketAddParam) {
+    public Result<?> addFromShoppingCart(SalTicketAddParam salTicketAddParam) throws Exception {
         List<String> cartIdList = Arrays.asList(salTicketAddParam.getShoppingCartIds().split(","));
         if (cartIdList.size() == 0) {
             return Result.error("请至少选择一个商品!");
@@ -108,7 +110,17 @@ public class SalTicketServiceImpl extends ServiceImpl<SalTicketMapper, SalTicket
                 salTicket.setStatus(SalTicketStatusEnum.INIT.getStatus());
             } else {
                 salTicket.setTotalAmt(salTicket.getQuotedAmt().multiply(new BigDecimal(salTicket.getMaterialCount())));
-                salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
+
+                // 付款方式: 货到付款 => 状态变为【待发货】
+                if (salTicket.getPaymentsMethod().equals(1)) {
+                    salTicket.setStatus(SalTicketStatusEnum.TO_BE_SHIPPED.getStatus());
+                } else {
+                    // 款到发货 => 订单状态为【待付款】
+                    salTicket.setStatus(SalTicketStatusEnum.TO_BE_PAYMENT.getStatus());
+
+                    // 创建应收记录
+                    createReceivableBill(salTicket);
+                }
             }
             salTicketList.add(salTicket);
             removeCartList.add(salShoppingCart);
@@ -120,5 +132,23 @@ public class SalTicketServiceImpl extends ServiceImpl<SalTicketMapper, SalTicket
         salShoppingCartService.removeBatchByIds(removeCartList);
 
         return Result.ok("下单成功！");
+    }
+
+    @Override
+    public void createReceivableBill(SalTicket salTicket) throws Exception {
+        StkIo stkIo = new StkIo() {{
+            setCustomerId(salTicket.getCustomerId());
+            setBillNo(salTicket.getNo());
+            setBillDate(salTicket.getNoDate());
+            setId(salTicket.getId());
+            setHasRp(1);
+            setHasSwell(0);
+            setStockIoType("203");
+            setSettleAmt(salTicket.getTotalAmt());
+            setInvoiceType(String.valueOf(salTicket.getInvoiceType()));
+            setIsAuto(0);
+            setIsRubric(0);
+        }};
+        finReceivableService.createBill(stkIo, "102");
     }
 }
